@@ -16,18 +16,9 @@ function App() {
   const lastSyncError = useStore((state) => state.lastSyncError)
   const initializeFromApi = useStore((state) => state.initializeFromApi)
 
-  // Load data from API on mount + refresh when user returns to tab
+  // Load data from API on mount
   useEffect(() => {
     initializeFromApi()
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        initializeFromApi()
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
   // Block browser zoom EXCEPT on timeline
