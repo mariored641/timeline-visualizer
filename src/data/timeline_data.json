@@ -1,0 +1,201 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2026-01-12T10:00:00Z",
+    "total_people": 3,
+    "total_events": 2
+  },
+  "categories": [
+    {
+      "id": "events",
+      "name": "אירועים",
+      "color": "#FF9800",
+      "order": 1,
+      "visible": true
+    },
+    {
+      "id": "music",
+      "name": "מוזיקה",
+      "color": "#4CAF50",
+      "order": 2,
+      "visible": true
+    },
+    {
+      "id": "philosophy",
+      "name": "פילוסופיה",
+      "color": "#2196F3",
+      "order": 3,
+      "visible": true
+    },
+    {
+      "id": "science",
+      "name": "מדע",
+      "color": "#9C27B0",
+      "order": 4,
+      "visible": true
+    },
+    {
+      "id": "judaism",
+      "name": "יהדות",
+      "color": "#1E88E5",
+      "order": 5,
+      "visible": true
+    },
+    {
+      "id": "religions",
+      "name": "דתות",
+      "color": "#F4511E",
+      "order": 6,
+      "visible": true
+    },
+    {
+      "id": "art",
+      "name": "אמנות",
+      "color": "#E91E63",
+      "order": 7,
+      "visible": true
+    },
+    {
+      "id": "politics",
+      "name": "פוליטיקה",
+      "color": "#5E35B1",
+      "order": 8,
+      "visible": true
+    }
+  ],
+  "locations": {
+    "israel": { "name": "ישראל", "color": "#0038B8", "region": "israel", "icon": "🇮🇱" },
+    "britain": { "name": "בריטניה", "color": "#AA96DA", "region": "britain", "icon": "🇬🇧" },
+    "western_europe": { "name": "מערב אירופה", "color": "#4ECDC4", "region": "western_europe", "icon": "🇫🇷" },
+    "southern_europe": { "name": "דרום אירופה", "color": "#95E1D3", "region": "southern_europe", "icon": "🇮🇹" },
+    "eastern_europe": { "name": "מזרח אירופה", "color": "#FFB6C1", "region": "eastern_europe", "icon": "🇷🇺" },
+    "north_america": { "name": "צפון אמריקה", "color": "#FCBAD3", "region": "north_america", "icon": "🇺🇸" },
+    "south_america": { "name": "דרום אמריקה", "color": "#FFD93D", "region": "south_america", "icon": "🇧🇷" },
+    "asia": { "name": "אסיה", "color": "#FF6B9D", "region": "asia", "icon": "🇨🇳" },
+    "oceania": { "name": "אוקיאניה", "color": "#6BCB77", "region": "oceania", "icon": "🇦🇺" },
+    "africa": { "name": "אפריקה", "color": "#C38D9E", "region": "africa", "icon": "🇿🇦" }
+  },
+  "people": [
+    {
+      "id": "beethoven_1770",
+      "name": "Ludwig van Beethoven",
+      "birth": 1770,
+      "death": 1827,
+      "categories": ["music", "composer"],
+      "primary_location": "western_europe",
+      "secondary_location": "western_europe",
+      "location_change_year": 1792,
+      "wikidata_id": "Q255",
+      "wikipedia_url": "https://en.wikipedia.org/wiki/Ludwig_van_Beethoven",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Beethoven.jpg",
+      "description": "מלחין ופסנתרן גרמני-אוסטרי, נחשב לאחד הגדולים בהיסטוריה המוזיקלית",
+      "position": {
+        "y": null,
+        "isManuallyPlaced": false,
+        "isPinned": false
+      },
+      "visibility": {
+        "isHidden": false,
+        "isInComparison": false
+      }
+    },
+    {
+      "id": "mozart_1756",
+      "name": "Wolfgang Amadeus Mozart",
+      "birth": 1756,
+      "death": 1791,
+      "categories": ["music", "composer"],
+      "primary_location": "western_europe",
+      "secondary_location": null,
+      "location_change_year": null,
+      "wikidata_id": "Q254",
+      "wikipedia_url": "https://en.wikipedia.org/wiki/Wolfgang_Amadeus_Mozart",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/1/1e/Wolfgang-amadeus-mozart_1.jpg",
+      "description": "מלחין אוסטרי, אחד המלחינים הגדולים בתקופת הקלאסיקה",
+      "position": {
+        "y": null,
+        "isManuallyPlaced": false,
+        "isPinned": false
+      },
+      "visibility": {
+        "isHidden": false,
+        "isInComparison": false
+      }
+    },
+    {
+      "id": "kant_1724",
+      "name": "Immanuel Kant",
+      "birth": 1724,
+      "death": 1804,
+      "categories": ["philosophy"],
+      "primary_location": "western_europe",
+      "secondary_location": null,
+      "location_change_year": null,
+      "wikidata_id": "Q9312",
+      "wikipedia_url": "https://en.wikipedia.org/wiki/Immanuel_Kant",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Kant_gemaelde_3.jpg",
+      "description": "פילוסוף גרמני, אחד המשפיעים ביותר בפילוסופיה המודרנית",
+      "position": {
+        "y": null,
+        "isManuallyPlaced": false,
+        "isPinned": false
+      },
+      "visibility": {
+        "isHidden": false,
+        "isInComparison": false
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "french_revolution_1789",
+      "name": "המהפכה הצרפתית",
+      "start_year": 1789,
+      "end_year": 1799,
+      "category": "revolution",
+      "location": "western_europe",
+      "icon": "🔥",
+      "wikidata_id": "Q6534",
+      "wikipedia_url": "https://en.wikipedia.org/wiki/French_Revolution",
+      "description": "מהפכה פוליטית וחברתית רדיקלית בצרפת",
+      "position": {
+        "y": null,
+        "isManuallyPlaced": false
+      },
+      "visibility": {
+        "isHidden": false
+      }
+    },
+    {
+      "id": "napoleonic_wars_1803",
+      "name": "מלחמות נפוליאון",
+      "start_year": 1803,
+      "end_year": 1815,
+      "category": "war",
+      "location": "western_europe",
+      "icon": "⚔️",
+      "wikidata_id": "Q83139",
+      "wikipedia_url": "https://en.wikipedia.org/wiki/Napoleonic_Wars",
+      "description": "סדרת מלחמות שנלחמו נגד נפוליאון בונפרטה",
+      "position": {
+        "y": null,
+        "isManuallyPlaced": false
+      },
+      "visibility": {
+        "isHidden": false
+      }
+    }
+  ],
+  "ui_state": {
+    "zoom": {
+      "start_year": 1700,
+      "end_year": 1850
+    },
+    "sidebar": {
+      "isOpen": true
+    },
+    "comparison": {
+      "items": []
+    }
+  }
+}

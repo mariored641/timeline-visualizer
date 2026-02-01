@@ -1,0 +1,64 @@
+{
+  "people": [
+    {
+      "id": "ben_gurion_1886",
+      "name": "דוד בן גוריון",
+      "birth": 1886,
+      "death": 1973,
+      "categories": ["politics"],
+      "primary_location": "eastern_europe",
+      "secondary_location": "israel",
+      "location_change_year": 1906
+    },
+    {
+      "id": "golda_meir_1898",
+      "name": "גולדה מאיר",
+      "birth": 1898,
+      "death": 1978,
+      "categories": ["politics"],
+      "primary_location": "eastern_europe",
+      "secondary_location": "israel",
+      "location_change_year": 1921
+    },
+    {
+      "id": "rambam_1138",
+      "name": "הרמב״ם (משה בן מימון)",
+      "birth": 1138,
+      "death": 1204,
+      "categories": ["judaism", "philosophy"],
+      "primary_location": "southern_europe",
+      "secondary_location": "africa",
+      "location_change_year": 1165
+    },
+    {
+      "id": "picasso_1881",
+      "name": "פבלו פיקאסו",
+      "birth": 1881,
+      "death": 1973,
+      "categories": ["art"],
+      "primary_location": "southern_europe",
+      "secondary_location": "western_europe",
+      "location_change_year": 1904
+    }
+  ],
+  "events": [
+    {
+      "id": "israel_independence_1948",
+      "name": "הכרזת העצמאות",
+      "start_year": 1948,
+      "end_year": null,
+      "category": "politics",
+      "location": "israel",
+      "icon": "🇮🇱"
+    },
+    {
+      "id": "renaissance",
+      "name": "הרנסנס",
+      "start_year": 1300,
+      "end_year": 1600,
+      "category": "art",
+      "location": "southern_europe",
+      "icon": "🎨"
+    }
+  ]
+}

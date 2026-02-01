@@ -1,0 +1,503 @@
+{
+  "people": [
+    {
+      "id": "napoleon_1769",
+      "name": "Napoleon Bonaparte",
+      "birth": 1769,
+      "death": 1821,
+      "categories": ["politics"],
+      "primary_location": "western_europe",
+      "secondary_location": "western_europe",
+      "description": "קיסר צרפת ומצביא צבאי"
+    },
+    {
+      "id": "darwin_1809",
+      "name": "Charles Darwin",
+      "birth": 1809,
+      "death": 1882,
+      "categories": ["science"],
+      "primary_location": "britain",
+      "description": "חוקר טבע בריטי, מייסד תורת האבולוציה"
+    },
+    {
+      "id": "marx_1818",
+      "name": "Karl Marx",
+      "birth": 1818,
+      "death": 1883,
+      "categories": ["philosophy"],
+      "primary_location": "western_europe",
+      "secondary_location": "britain",
+      "location_change_year": 1849,
+      "description": "פילוסוף גרמני, מייסד הקומוניזם"
+    },
+    {
+      "id": "nietzsche_1844",
+      "name": "Friedrich Nietzsche",
+      "birth": 1844,
+      "death": 1900,
+      "categories": ["philosophy"],
+      "primary_location": "western_europe",
+      "description": "פילוסוף גרמני"
+    },
+    {
+      "id": "einstein_1879",
+      "name": "Albert Einstein",
+      "birth": 1879,
+      "death": 1955,
+      "categories": ["science"],
+      "primary_location": "western_europe",
+      "secondary_location": "north_america",
+      "location_change_year": 1933,
+      "description": "פיזיקאי תיאורטי, תורת היחסות"
+    },
+    {
+      "id": "curie_1867",
+      "name": "Marie Curie",
+      "birth": 1867,
+      "death": 1934,
+      "categories": ["science"],
+      "primary_location": "eastern_europe",
+      "secondary_location": "western_europe",
+      "location_change_year": 1891,
+      "description": "פיזיקאית וכימאית, חלוצת מחקר הרדיואקטיביות"
+    },
+    {
+      "id": "freud_1856",
+      "name": "Sigmund Freud",
+      "birth": 1856,
+      "death": 1939,
+      "categories": ["science"],
+      "primary_location": "western_europe",
+      "secondary_location": "britain",
+      "location_change_year": 1938,
+      "description": "נוירולוג אוסטרי, מייסד הפסיכואנליזה"
+    },
+    {
+      "id": "edison_1847",
+      "name": "Thomas Edison",
+      "birth": 1847,
+      "death": 1931,
+      "categories": ["science"],
+      "primary_location": "north_america",
+      "description": "ממציא ואיש עסקים אמריקאי"
+    },
+    {
+      "id": "tesla_1856",
+      "name": "Nikola Tesla",
+      "birth": 1856,
+      "death": 1943,
+      "categories": ["science"],
+      "primary_location": "eastern_europe",
+      "secondary_location": "north_america",
+      "location_change_year": 1884,
+      "description": "ממציא ומהנדס חשמל סרבי-אמריקאי"
+    },
+    {
+      "id": "pasteur_1822",
+      "name": "Louis Pasteur",
+      "birth": 1822,
+      "death": 1895,
+      "categories": ["science"],
+      "primary_location": "western_europe",
+      "description": "כימאי ומיקרוביולוג צרפתי"
+    },
+    {
+      "id": "tchaikovsky_1840",
+      "name": "Pyotr Tchaikovsky",
+      "birth": 1840,
+      "death": 1893,
+      "categories": ["music"],
+      "primary_location": "eastern_europe",
+      "description": "מלחין רוסי, אגם הברבורים"
+    },
+    {
+      "id": "chopin_1810",
+      "name": "Frédéric Chopin",
+      "birth": 1810,
+      "death": 1849,
+      "categories": ["music"],
+      "primary_location": "eastern_europe",
+      "secondary_location": "western_europe",
+      "location_change_year": 1831,
+      "description": "מלחין ופסנתרן פולני"
+    },
+    {
+      "id": "wagner_1813",
+      "name": "Richard Wagner",
+      "birth": 1813,
+      "death": 1883,
+      "categories": ["music"],
+      "primary_location": "western_europe",
+      "description": "מלחין גרמני, אופרות"
+    },
+    {
+      "id": "verdi_1813",
+      "name": "Giuseppe Verdi",
+      "birth": 1813,
+      "death": 1901,
+      "categories": ["music"],
+      "primary_location": "southern_europe",
+      "description": "מלחין אופרות איטלקי"
+    },
+    {
+      "id": "debussy_1862",
+      "name": "Claude Debussy",
+      "birth": 1862,
+      "death": 1918,
+      "categories": ["music"],
+      "primary_location": "western_europe",
+      "description": "מלחין צרפתי, אימפרסיוניזם מוזיקלי"
+    },
+    {
+      "id": "stravinsky_1882",
+      "name": "Igor Stravinsky",
+      "birth": 1882,
+      "death": 1971,
+      "categories": ["music"],
+      "primary_location": "eastern_europe",
+      "secondary_location": "north_america",
+      "location_change_year": 1939,
+      "description": "מלחין רוסי-אמריקאי, ציפור האש"
+    },
+    {
+      "id": "mahler_1860",
+      "name": "Gustav Mahler",
+      "birth": 1860,
+      "death": 1911,
+      "categories": ["music"],
+      "primary_location": "western_europe",
+      "description": "מלחין ומנצח אוסטרי"
+    },
+    {
+      "id": "van_gogh_1853",
+      "name": "Vincent van Gogh",
+      "birth": 1853,
+      "death": 1890,
+      "categories": ["art"],
+      "primary_location": "western_europe",
+      "secondary_location": "western_europe",
+      "description": "צייר הולנדי, פוסט-אימפרסיוניזם"
+    },
+    {
+      "id": "monet_1840",
+      "name": "Claude Monet",
+      "birth": 1840,
+      "death": 1926,
+      "categories": ["art"],
+      "primary_location": "western_europe",
+      "description": "צייר צרפתי, מייסד האימפרסיוניזם"
+    },
+    {
+      "id": "picasso_1881",
+      "name": "Pablo Picasso",
+      "birth": 1881,
+      "death": 1973,
+      "categories": ["art"],
+      "primary_location": "southern_europe",
+      "secondary_location": "western_europe",
+      "location_change_year": 1904,
+      "description": "צייר ופסל ספרדי, קוביזם"
+    },
+    {
+      "id": "renoir_1841",
+      "name": "Pierre-Auguste Renoir",
+      "birth": 1841,
+      "death": 1919,
+      "categories": ["art"],
+      "primary_location": "western_europe",
+      "description": "צייר צרפתי, אימפרסיוניזם"
+    },
+    {
+      "id": "klimt_1862",
+      "name": "Gustav Klimt",
+      "birth": 1862,
+      "death": 1918,
+      "categories": ["art"],
+      "primary_location": "western_europe",
+      "description": "צייר אוסטרי, ארט נובו"
+    },
+    {
+      "id": "dali_1904",
+      "name": "Salvador Dalí",
+      "birth": 1904,
+      "death": 1989,
+      "categories": ["art"],
+      "primary_location": "southern_europe",
+      "secondary_location": "north_america",
+      "location_change_year": 1940,
+      "description": "צייר ספרדי, סוריאליזם"
+    },
+    {
+      "id": "herzl_1860",
+      "name": "Theodor Herzl",
+      "birth": 1860,
+      "death": 1904,
+      "categories": ["judaism", "politics"],
+      "primary_location": "western_europe",
+      "secondary_location": "western_europe",
+      "description": "מייסד הציונות המדינית"
+    },
+    {
+      "id": "rav_kook_1865",
+      "name": "Abraham Isaac Kook",
+      "birth": 1865,
+      "death": 1935,
+      "categories": ["judaism"],
+      "primary_location": "eastern_europe",
+      "secondary_location": "israel",
+      "location_change_year": 1904,
+      "description": "הרב הראשי האשכנזי הראשון, הוגה ציוני-דתי"
+    },
+    {
+      "id": "baal_shem_tov_1698",
+      "name": "Baal Shem Tov",
+      "birth": 1698,
+      "death": 1760,
+      "categories": ["judaism"],
+      "primary_location": "eastern_europe",
+      "description": "מייסד תנועת החסידות"
+    },
+    {
+      "id": "gaon_vilna_1720",
+      "name": "Vilna Gaon",
+      "birth": 1720,
+      "death": 1797,
+      "categories": ["judaism"],
+      "primary_location": "eastern_europe",
+      "description": "רבי אליהו מווילנה, מגדולי הפוסקים"
+    },
+    {
+      "id": "chofetz_chaim_1838",
+      "name": "Chofetz Chaim",
+      "birth": 1838,
+      "death": 1933,
+      "categories": ["judaism"],
+      "primary_location": "eastern_europe",
+      "description": "רבי ישראל מאיר הכהן, פוסק ומחנך"
+    },
+    {
+      "id": "churchill_1874",
+      "name": "Winston Churchill",
+      "birth": 1874,
+      "death": 1965,
+      "categories": ["politics"],
+      "primary_location": "britain",
+      "description": "ראש ממשלת בריטניה במלחמת העולם השנייה"
+    },
+    {
+      "id": "lincoln_1809",
+      "name": "Abraham Lincoln",
+      "birth": 1809,
+      "death": 1865,
+      "categories": ["politics"],
+      "primary_location": "north_america",
+      "description": "נשיא ארה\"ב ה-16, ביטול העבדות"
+    },
+    {
+      "id": "bismarck_1815",
+      "name": "Otto von Bismarck",
+      "birth": 1815,
+      "death": 1898,
+      "categories": ["politics"],
+      "primary_location": "western_europe",
+      "description": "קנצלר גרמניה, מאחד גרמניה"
+    },
+    {
+      "id": "queen_victoria_1819",
+      "name": "Queen Victoria",
+      "birth": 1819,
+      "death": 1901,
+      "categories": ["politics"],
+      "primary_location": "britain",
+      "description": "מלכת בריטניה, העידן הוויקטוריאני"
+    },
+    {
+      "id": "gandhi_1869",
+      "name": "Mahatma Gandhi",
+      "birth": 1869,
+      "death": 1948,
+      "categories": ["politics"],
+      "primary_location": "asia",
+      "secondary_location": "asia",
+      "description": "מנהיג תנועת העצמאות ההודית"
+    },
+    {
+      "id": "ben_gurion_1886",
+      "name": "David Ben-Gurion",
+      "birth": 1886,
+      "death": 1973,
+      "categories": ["politics", "judaism"],
+      "primary_location": "eastern_europe",
+      "secondary_location": "israel",
+      "location_change_year": 1906,
+      "description": "ראש הממשלה הראשון של ישראל"
+    },
+    {
+      "id": "washington_1732",
+      "name": "George Washington",
+      "birth": 1732,
+      "death": 1799,
+      "categories": ["politics"],
+      "primary_location": "north_america",
+      "description": "נשיא ארה\"ב הראשון"
+    },
+    {
+      "id": "hegel_1770",
+      "name": "Georg W.F. Hegel",
+      "birth": 1770,
+      "death": 1831,
+      "categories": ["philosophy"],
+      "primary_location": "western_europe",
+      "description": "פילוסוף גרמני, אידיאליזם"
+    },
+    {
+      "id": "kierkegaard_1813",
+      "name": "Søren Kierkegaard",
+      "birth": 1813,
+      "death": 1855,
+      "categories": ["philosophy"],
+      "primary_location": "western_europe",
+      "description": "פילוסוף דני, אבי האקזיסטנציאליזם"
+    },
+    {
+      "id": "sartre_1905",
+      "name": "Jean-Paul Sartre",
+      "birth": 1905,
+      "death": 1980,
+      "categories": ["philosophy"],
+      "primary_location": "western_europe",
+      "description": "פילוסוף וסופר צרפתי, אקזיסטנציאליזם"
+    },
+    {
+      "id": "wittgenstein_1889",
+      "name": "Ludwig Wittgenstein",
+      "birth": 1889,
+      "death": 1951,
+      "categories": ["philosophy"],
+      "primary_location": "western_europe",
+      "secondary_location": "britain",
+      "location_change_year": 1929,
+      "description": "פילוסוף אוסטרי-בריטי, פילוסופיית השפה"
+    },
+    {
+      "id": "bohr_1885",
+      "name": "Niels Bohr",
+      "birth": 1885,
+      "death": 1962,
+      "categories": ["science"],
+      "primary_location": "western_europe",
+      "description": "פיזיקאי דני, מודל האטום"
+    },
+    {
+      "id": "planck_1858",
+      "name": "Max Planck",
+      "birth": 1858,
+      "death": 1947,
+      "categories": ["science"],
+      "primary_location": "western_europe",
+      "description": "פיזיקאי גרמני, מייסד תורת הקוונטים"
+    }
+  ],
+  "events": [
+    {
+      "id": "american_revolution_1775",
+      "name": "מלחמת העצמאות האמריקאית",
+      "start_year": 1775,
+      "end_year": 1783,
+      "category": "events",
+      "location": "north_america",
+      "icon": "🗽",
+      "description": "מלחמת העצמאות של 13 המושבות"
+    },
+    {
+      "id": "industrial_revolution_1760",
+      "name": "המהפכה התעשייתית",
+      "start_year": 1760,
+      "end_year": 1840,
+      "category": "events",
+      "location": "britain",
+      "icon": "🏭",
+      "description": "מעבר לייצור מכני"
+    },
+    {
+      "id": "ww1_1914",
+      "name": "מלחמת העולם הראשונה",
+      "start_year": 1914,
+      "end_year": 1918,
+      "category": "events",
+      "location": "western_europe",
+      "icon": "💣",
+      "description": "המלחמה הגדולה"
+    },
+    {
+      "id": "ww2_1939",
+      "name": "מלחמת העולם השנייה",
+      "start_year": 1939,
+      "end_year": 1945,
+      "category": "events",
+      "location": "western_europe",
+      "icon": "✈️",
+      "description": "המלחמה הגדולה ביותר בהיסטוריה"
+    },
+    {
+      "id": "holocaust_1941",
+      "name": "השואה",
+      "start_year": 1941,
+      "end_year": 1945,
+      "category": "events",
+      "location": "eastern_europe",
+      "icon": "🕯️",
+      "description": "רצח העם היהודי"
+    },
+    {
+      "id": "israel_independence_1948",
+      "name": "הקמת מדינת ישראל",
+      "start_year": 1948,
+      "end_year": 1948,
+      "category": "events",
+      "location": "israel",
+      "icon": "🇮🇱",
+      "description": "הכרזת העצמאות של מדינת ישראל"
+    },
+    {
+      "id": "russian_revolution_1917",
+      "name": "המהפכה הרוסית",
+      "start_year": 1917,
+      "end_year": 1922,
+      "category": "events",
+      "location": "eastern_europe",
+      "icon": "⭐",
+      "description": "המהפכה הבולשביקית והקמת ברית המועצות"
+    },
+    {
+      "id": "spring_of_nations_1848",
+      "name": "אביב העמים",
+      "start_year": 1848,
+      "end_year": 1849,
+      "category": "events",
+      "location": "western_europe",
+      "icon": "🌍",
+      "description": "גל מהפכות דמוקרטיות ברחבי אירופה"
+    },
+    {
+      "id": "cold_war_1947",
+      "name": "המלחמה הקרה",
+      "start_year": 1947,
+      "end_year": 1991,
+      "category": "events",
+      "location": "north_america",
+      "icon": "🧊",
+      "description": "עימות בין ארה\"ב לברית המועצות"
+    },
+    {
+      "id": "balfour_declaration_1917",
+      "name": "הצהרת בלפור",
+      "start_year": 1917,
+      "end_year": 1917,
+      "category": "events",
+      "location": "britain",
+      "icon": "📜",
+      "description": "הצהרת בריטניה בעד בית לאומי יהודי"
+    }
+  ]
+}
