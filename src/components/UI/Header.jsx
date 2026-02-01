@@ -5,6 +5,8 @@ const Header = () => {
   const openAddModal = useStore((state) => state.openAddModal)
   const openImportModal = useStore((state) => state.openImportModal)
   const exportData = useStore((state) => state.exportData)
+  const isSaving = useStore((state) => state.isSaving)
+  const lastSynced = useStore((state) => state.lastSynced)
 
   const handleExportJSON = () => {
     const data = exportData()
@@ -55,6 +57,18 @@ const Header = () => {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-pastel-blue to-pastel-purple bg-clip-text text-transparent">
             Timeline Visualizer
           </h1>
+
+          {/* Sync status */}
+          <div className="text-xs text-gray-400 mr-3">
+            {isSaving ? (
+              <span className="flex items-center gap-1">
+                <span className="animate-spin w-3 h-3 border-2 border-pastel-blue border-t-transparent rounded-full inline-block" />
+                שומר...
+              </span>
+            ) : lastSynced ? (
+              <span>נשמר</span>
+            ) : null}
+          </div>
         </div>
 
         {/* Action buttons */}

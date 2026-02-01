@@ -12,6 +12,18 @@ import ImportModal from './components/Modals/ImportModal'
 
 function App() {
   const sidebarOpen = useStore((state) => state.sidebarOpen)
+  const isLoading = useStore((state) => state.isLoading)
+  const lastSyncError = useStore((state) => state.lastSyncError)
+  const initializeFromApi = useStore((state) => state.initializeFromApi)
+
+  // Load data from API on mount + refresh every 30s
+  useEffect(() => {
+    initializeFromApi()
+    const interval = setInterval(() => {
+      initializeFromApi()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Block browser zoom EXCEPT on timeline
   useEffect(() => {
@@ -62,8 +74,26 @@ function App() {
   }, [])
 
 
+  if (isLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-50" dir="rtl">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-pastel-blue border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-gray-500 text-sm">טוען נתונים...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full h-full flex flex-col bg-gray-50" dir="rtl">
+      {/* Sync error banner */}
+      {lastSyncError && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-600 text-center flex-shrink-0">
+          {lastSyncError}
+        </div>
+      )}
+
       {/* Header - flex-shrink-0 ensures it stays fixed height */}
       <div className="flex-shrink-0">
         <Header />

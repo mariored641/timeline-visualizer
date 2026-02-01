@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import timelineData from '../data/timeline_data.json';
+import { apiService } from '../services/apiService';
 
 const useStore = create((set, get) => ({
   // נתוני הציר
@@ -8,6 +9,12 @@ const useStore = create((set, get) => ({
   locations: timelineData.locations,
   people: timelineData.people,
   events: timelineData.events,
+
+  // מצב סנכרון
+  isLoading: true,
+  isSaving: false,
+  lastSyncError: null,
+  lastSynced: null,
 
   // מצב UI
   sidebarOpen: timelineData.ui_state.sidebar.isOpen,
@@ -59,6 +66,51 @@ const useStore = create((set, get) => ({
     x: 0,
     y: 0,
     item: null
+  },
+
+  // API sync actions
+
+  initializeFromApi: async () => {
+    try {
+      set({ isLoading: true, lastSyncError: null });
+      const data = await apiService.fetchData();
+
+      if (data) {
+        set({
+          metadata: data.metadata || timelineData.metadata,
+          categories: data.categories || timelineData.categories,
+          locations: data.locations || timelineData.locations,
+          people: data.people || timelineData.people,
+          events: data.events || timelineData.events,
+          isLoading: false,
+        });
+      } else {
+        set({ isLoading: false });
+      }
+    } catch (error) {
+      console.error('Failed to load from API:', error);
+      set({ isLoading: false, lastSyncError: 'שגיאה בטעינת נתונים מהשרת' });
+    }
+  },
+
+  syncToApi: async () => {
+    const state = get();
+    const dataToSync = {
+      metadata: state.metadata,
+      categories: state.categories,
+      locations: state.locations,
+      people: state.people,
+      events: state.events,
+    };
+
+    try {
+      set({ isSaving: true });
+      await apiService.saveData(dataToSync);
+      set({ isSaving: false, lastSynced: new Date().toISOString(), lastSyncError: null });
+    } catch (error) {
+      console.error('Failed to sync:', error);
+      set({ isSaving: false, lastSyncError: 'שגיאה בשמירה. השינויים נשמרו מקומית.' });
+    }
   },
 
   // Actions
@@ -149,70 +201,88 @@ const useStore = create((set, get) => ({
   })),
 
   // Add person
-  addPerson: (person) => set((state) => ({
-    people: [...state.people, {
-      ...person,
-      position: {
-        y: null,
-        isManuallyPlaced: false,
-        isPinned: false
-      },
-      visibility: {
-        isHidden: false,
-        isInComparison: false
+  addPerson: (person) => {
+    set((state) => ({
+      people: [...state.people, {
+        ...person,
+        position: {
+          y: null,
+          isManuallyPlaced: false,
+          isPinned: false
+        },
+        visibility: {
+          isHidden: false,
+          isInComparison: false
+        }
+      }],
+      metadata: {
+        ...state.metadata,
+        total_people: state.metadata.total_people + 1
       }
-    }],
-    metadata: {
-      ...state.metadata,
-      total_people: state.metadata.total_people + 1
-    }
-  })),
+    }));
+    get().syncToApi();
+  },
 
   // Add event
-  addEvent: (event) => set((state) => ({
-    events: [...state.events, {
-      ...event,
-      position: {
-        y: null,
-        isManuallyPlaced: false
-      },
-      visibility: {
-        isHidden: false
+  addEvent: (event) => {
+    set((state) => ({
+      events: [...state.events, {
+        ...event,
+        position: {
+          y: null,
+          isManuallyPlaced: false
+        },
+        visibility: {
+          isHidden: false
+        }
+      }],
+      metadata: {
+        ...state.metadata,
+        total_events: state.metadata.total_events + 1
       }
-    }],
-    metadata: {
-      ...state.metadata,
-      total_events: state.metadata.total_events + 1
-    }
-  })),
+    }));
+    get().syncToApi();
+  },
 
   // Update person
-  updatePerson: (id, updates) => set((state) => ({
-    people: state.people.map(p => p.id === id ? { ...p, ...updates } : p)
-  })),
+  updatePerson: (id, updates) => {
+    set((state) => ({
+      people: state.people.map(p => p.id === id ? { ...p, ...updates } : p)
+    }));
+    get().syncToApi();
+  },
 
   // Update event
-  updateEvent: (id, updates) => set((state) => ({
-    events: state.events.map(e => e.id === id ? { ...e, ...updates } : e)
-  })),
+  updateEvent: (id, updates) => {
+    set((state) => ({
+      events: state.events.map(e => e.id === id ? { ...e, ...updates } : e)
+    }));
+    get().syncToApi();
+  },
 
   // Delete person
-  deletePerson: (id) => set((state) => ({
-    people: state.people.filter(p => p.id !== id),
-    metadata: {
-      ...state.metadata,
-      total_people: state.metadata.total_people - 1
-    }
-  })),
+  deletePerson: (id) => {
+    set((state) => ({
+      people: state.people.filter(p => p.id !== id),
+      metadata: {
+        ...state.metadata,
+        total_people: state.metadata.total_people - 1
+      }
+    }));
+    get().syncToApi();
+  },
 
   // Delete event
-  deleteEvent: (id) => set((state) => ({
-    events: state.events.filter(e => e.id !== id),
-    metadata: {
-      ...state.metadata,
-      total_events: state.metadata.total_events - 1
-    }
-  })),
+  deleteEvent: (id) => {
+    set((state) => ({
+      events: state.events.filter(e => e.id !== id),
+      metadata: {
+        ...state.metadata,
+        total_events: state.metadata.total_events - 1
+      }
+    }));
+    get().syncToApi();
+  },
 
   // Hide/show item
   toggleItemVisibility: (id, type) => set((state) => {
@@ -339,7 +409,8 @@ const useStore = create((set, get) => ({
   hideContextMenu: () => set({ contextMenu: { visible: false, x: 0, y: 0, item: null } }),
 
   // Import bulk data
-  importBulkData: (data, strategy = 'skip') => set((state) => {
+  importBulkData: (data, strategy = 'skip') => {
+    set((state) => {
     let newPeople = [...state.people];
     let newEvents = [...state.events];
     let imported = 0;
@@ -420,7 +491,9 @@ const useStore = create((set, get) => ({
         total_events: newEvents.length
       }
     };
-  }),
+    });
+    get().syncToApi();
+  },
 
   // Export data
   exportData: () => {
