@@ -120,7 +120,13 @@ const Header = () => {
                 onClick={() => openImportModal('json')}
                 className="w-full px-5 py-3 text-right hover:bg-pastel-green/20 transition-all duration-200 font-medium text-gray-800"
               >
-                ייבוא קבוצתי (JSON)
+                ייבוא קבוצתי (JSON קובץ)
+              </button>
+              <button
+                onClick={() => openImportModal('json-paste')}
+                className="w-full px-5 py-3 text-right hover:bg-pastel-green/20 transition-all duration-200 font-medium text-gray-800"
+              >
+                📋 הדבק טקסט JSON
               </button>
               <button
                 onClick={handleDownloadGuide}

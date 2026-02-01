@@ -14,6 +14,8 @@ const ImportModal = () => {
     return <WikipediaImport />
   } else if (importModalType === 'json') {
     return <JSONImport />
+  } else if (importModalType === 'json-paste') {
+    return <JSONPasteImport />
   }
 
   return null
@@ -386,6 +388,232 @@ const JSONImport = () => {
           >
             {loading ? 'מייבא...' : 'ייבא'}
           </button>
+
+          {success && (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+              {success}
+            </div>
+          )}
+
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 whitespace-pre-wrap text-sm">
+              {error}
+            </div>
+          )}
+
+          {validation && (
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="text-lg font-bold text-gray-800">נמצאו כפילויות</h3>
+              <p className="text-sm text-gray-600">
+                נמצאו {validation.duplicates.length} פריטים שכבר קיימים במערכת. מה תרצה לעשות?
+              </p>
+
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleConfirmWithDuplicates('skip')}
+                  className="w-full px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                >
+                  דלג על כפילויות
+                </button>
+                <button
+                  onClick={() => handleConfirmWithDuplicates('overwrite')}
+                  className="w-full px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  דרוס את הקיימים
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const JSONPasteImport = () => {
+  const [jsonText, setJsonText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [validation, setValidation] = useState(null)
+  const [success, setSuccess] = useState(null)
+  const [preview, setPreview] = useState(null)
+
+  const closeImportModal = useStore((state) => state.closeImportModal)
+  const importBulkData = useStore((state) => state.importBulkData)
+  const people = useStore((state) => state.people)
+  const events = useStore((state) => state.events)
+
+  const handleParse = () => {
+    setError(null)
+    setValidation(null)
+    setPreview(null)
+
+    if (!jsonText.trim()) {
+      setError('אנא הדבק טקסט JSON')
+      return
+    }
+
+    try {
+      let data
+      try {
+        data = JSON.parse(jsonText)
+      } catch (parseErr) {
+        throw new Error(`שגיאה בפענוח JSON: ${parseErr.message}`)
+      }
+
+      if (!data || typeof data !== 'object') {
+        throw new Error('הטקסט חייב להכיל אובייקט JSON תקין')
+      }
+
+      // Validate
+      const validationResult = validateImportData(data)
+
+      if (!validationResult.isValid) {
+        setError(validationResult.errors.join('\n'))
+        return
+      }
+
+      // Show preview
+      const peopleCount = data.people ? data.people.length : 0
+      const eventsCount = data.events ? data.events.length : 0
+      setPreview({ data, peopleCount, eventsCount })
+
+    } catch (err) {
+      setError(`שגיאה: ${err.message}`)
+    }
+  }
+
+  const handleImport = () => {
+    if (!preview) return
+
+    setLoading(true)
+
+    try {
+      // Check duplicates
+      const duplicates = checkDuplicates(preview.data, people, events)
+
+      if (duplicates.length > 0) {
+        setValidation({
+          data: preview.data,
+          duplicates
+        })
+        setLoading(false)
+        return
+      }
+
+      importBulkData(preview.data, 'skip')
+      setSuccess(`ייבוא הושלם בהצלחה! נוספו ${preview.peopleCount} אנשים ו-${preview.eventsCount} אירועים.`)
+
+      setTimeout(() => {
+        closeImportModal()
+      }, 2000)
+    } catch (err) {
+      setError(`שגיאה בייבוא: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleConfirmWithDuplicates = (strategy) => {
+    if (!validation) return
+
+    const peopleCount = validation.data.people ? validation.data.people.length : 0
+    const eventsCount = validation.data.events ? validation.data.events.length : 0
+
+    importBulkData(validation.data, strategy)
+
+    setSuccess(`ייבוא הושלם בהצלחה! נוספו ${peopleCount} אנשים ו-${eventsCount} אירועים.`)
+
+    setTimeout(() => {
+      closeImportModal()
+    }, 2000)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800">ייבוא מטקסט (JSON)</h2>
+          <button
+            onClick={closeImportModal}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-700">
+              💡 הדבק כאן את טקסט ה-JSON שקיבלת מ-Claude או ממקור אחר.
+              לא צריך להוריד קובץ - פשוט העתק-הדבק!
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              הדבק טקסט JSON
+            </label>
+            <textarea
+              value={jsonText}
+              onChange={(e) => {
+                setJsonText(e.target.value)
+                setPreview(null)
+                setError(null)
+                setSuccess(null)
+                setValidation(null)
+              }}
+              placeholder={'{\n  "people": [\n    {\n      "id": "example_1900",\n      "name": "שם לדוגמה",\n      "birth": 1900,\n      "death": 1980,\n      "categories": ["science"],\n      "primary_location": "israel"\n    }\n  ]\n}'}
+              rows={10}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm resize-y"
+              dir="ltr"
+              style={{ minHeight: '180px' }}
+            />
+          </div>
+
+          {!preview && !success && (
+            <button
+              onClick={handleParse}
+              disabled={!jsonText.trim()}
+              className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              בדוק ואמת
+            </button>
+          )}
+
+          {preview && !success && !validation && (
+            <div className="space-y-3">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-bold text-blue-800 mb-2">תצוגה מקדימה:</h4>
+                <div className="text-sm text-blue-700 space-y-1">
+                  {preview.peopleCount > 0 && (
+                    <p>👤 {preview.peopleCount} אנשים: {preview.data.people.map(p => p.name).join(', ')}</p>
+                  )}
+                  {preview.eventsCount > 0 && (
+                    <p>📅 {preview.eventsCount} אירועים: {preview.data.events.map(e => e.name).join(', ')}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleImport}
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-300"
+                >
+                  {loading ? 'מייבא...' : 'אשר וייבא'}
+                </button>
+                <button
+                  onClick={() => { setPreview(null) }}
+                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  חזור
+                </button>
+              </div>
+            </div>
+          )}
 
           {success && (
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">

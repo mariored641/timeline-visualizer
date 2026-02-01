@@ -78,7 +78,8 @@
   "people": [
     {
       "id": "beethoven_1770",
-      "name": "Ludwig van Beethoven",
+      "name": "לודוויג ואן בטהובן",
+      "short_name": "בטהובן",
       "birth": 1770,
       "death": 1827,
       "categories": ["music", "composer"],
@@ -101,7 +102,8 @@
     },
     {
       "id": "mozart_1756",
-      "name": "Wolfgang Amadeus Mozart",
+      "name": "וולפגנג אמדאוס מוצרט",
+      "short_name": "מוצרט",
       "birth": 1756,
       "death": 1791,
       "categories": ["music", "composer"],
@@ -124,7 +126,8 @@
     },
     {
       "id": "kant_1724",
-      "name": "Immanuel Kant",
+      "name": "עמנואל קאנט",
+      "short_name": "קאנט",
       "birth": 1724,
       "death": 1804,
       "categories": ["philosophy"],

@@ -3,6 +3,7 @@
     {
       "id": "ben_gurion_1886",
       "name": "דוד בן גוריון",
+      "short_name": "בן גוריון",
       "birth": 1886,
       "death": 1973,
       "categories": ["politics"],
@@ -13,6 +14,7 @@
     {
       "id": "golda_meir_1898",
       "name": "גולדה מאיר",
+      "short_name": "גולדה",
       "birth": 1898,
       "death": 1978,
       "categories": ["politics"],
@@ -23,6 +25,7 @@
     {
       "id": "rambam_1138",
       "name": "הרמב״ם (משה בן מימון)",
+      "short_name": "הרמב״ם",
       "birth": 1138,
       "death": 1204,
       "categories": ["judaism", "philosophy"],
@@ -33,6 +36,7 @@
     {
       "id": "picasso_1881",
       "name": "פבלו פיקאסו",
+      "short_name": "פיקאסו",
       "birth": 1881,
       "death": 1973,
       "categories": ["art"],

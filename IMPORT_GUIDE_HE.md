@@ -30,8 +30,9 @@
 
 | שדה | סוג | נדרש | תיאור |
 |-----|-----|------|-------|
-| `id` | string | ✅ | מזהה ייחודי לאדם |
-| `name` | string | ✅ | שם מלא |
+| `id` | string | ✅ | מזהה ייחודי לאדם (באנגלית, פורמט: שם_שנה) |
+| `name` | string | ✅ | שם מלא בעברית |
+| `short_name` | string | ❌ | שם מקוצר בעברית (שם משפחה או כינוי מקובל) |
 | `birth` | number | ✅ | שנת לידה |
 | `death` | number | ❌ | שנת פטירה (null אם בחיים) |
 | `categories` | array | ✅ | רשימת קטגוריות (לפחות אחת) |
@@ -39,11 +40,19 @@
 | `secondary_location` | string | ❌ | מיקום משני (null אם אין) |
 | `location_change_year` | number | ❌ | שנת שינוי מיקום |
 
+> **הערה על `short_name`:** האפליקציה משתמשת במערכת תצוגה תלת-שכבתית:
+> - **זום קרוב** (עד 400 שנים) - מציג את השם המלא (`name`)
+> - **זום בינוני** (400-1000 שנים) - מציג את השם המקוצר (`short_name`)
+> - **זום רחוק** (מעל 1000 שנים) - השם נעלם
+>
+> דוגמאות ל-`short_name`: בטהובן, מוצרט, איינשטיין, בן גוריון, הרמב״ם, הבעש״ט, רש״י
+
 **דוגמה:**
 ```json
 {
   "id": "albert_einstein_1879",
   "name": "אלברט איינשטיין",
+  "short_name": "איינשטיין",
   "birth": 1879,
   "death": 1955,
   "categories": ["science"],
@@ -91,6 +100,7 @@
     {
       "id": "marie_curie_1867",
       "name": "מרי קירי",
+      "short_name": "קירי",
       "birth": 1867,
       "death": 1934,
       "categories": ["science"],
@@ -126,6 +136,7 @@
     {
       "id": "leonardo_da_vinci_1452",
       "name": "לאונרדו דה וינצ'י",
+      "short_name": "דה וינצ'י",
       "birth": 1452,
       "death": 1519,
       "categories": ["art", "science"],
@@ -136,6 +147,7 @@
     {
       "id": "mozart_1756",
       "name": "וולפגנג אמדאוס מוצרט",
+      "short_name": "מוצרט",
       "birth": 1756,
       "death": 1791,
       "categories": ["music"],
@@ -267,6 +279,7 @@
     {
       "id": "test_person",
       "name": "אדם לדוגמה",
+      "short_name": "לדוגמה",
       "birth": 1900,
       "death": 2000,
       "categories": ["science"],
@@ -288,13 +301,14 @@
 
 **פרומפט לדוגמה:**
 ```
-צור לי קובץ JSON לייבוא של 3 מדענים מפורסמים.
+צור לי JSON לייבוא של 3 מדענים מפורסמים.
 השתמש במבנה הזה:
 {
   "people": [
     {
       "id": "unique_id",
-      "name": "שם מלא",
+      "name": "שם מלא בעברית",
+      "short_name": "שם משפחה או כינוי מקובל בעברית",
       "birth": שנה,
       "death": שנה או null,
       "categories": ["science"],
@@ -305,7 +319,8 @@
   ]
 }
 ודא ש-JSON תקין וכל השדות קיימים.
-השתמש באחד מהאזורים הגיאוגרפיים: israel, britain, western_europe, southern_europe, eastern_europe, north_america, south_america, asia, oceania, africa
+קטגוריות: music, philosophy, science, judaism, religions, art, politics
+מיקומים: israel, britain, western_europe, southern_europe, eastern_europe, north_america, south_america, asia, oceania, africa
 ```
 
 ### 6. **בדיקת כפילויות**

@@ -120,6 +120,8 @@ const TimelineCanvas = () => {
       .domain([zoomState.startYear, zoomState.endYear])
       .range([0, innerWidth])
 
+    const yearRange = zoomState.endYear - zoomState.startYear
+
     // Group items by category and calculate layout first (to determine total content height)
     const visibleCategories = categories.filter((c) => c.visible)
 
@@ -187,7 +189,7 @@ const TimelineCanvas = () => {
           hideTooltip,
           showContextMenu,
           openDetailPanel
-        })
+        }, yearRange)
       })
 
       // Draw events
@@ -197,7 +199,7 @@ const TimelineCanvas = () => {
           hideTooltip,
           showContextMenu,
           openDetailPanel
-        })
+        }, yearRange)
       })
     })
 
@@ -469,7 +471,7 @@ const drawParallelLines = (g, xScale, height, parallelLines) => {
 /**
  * Draw person bar (rounded rectangle like events)
  */
-const drawPersonLine = (g, person, xScale, categoryY, locations, handlers) => {
+const drawPersonLine = (g, person, xScale, categoryY, locations, handlers, yearRange) => {
   const y = categoryY + (person.position.y || 0) + 40
   const x1 = xScale(person.birth)
   const x2 = xScale(person.death || new Date().getFullYear())
@@ -536,22 +538,25 @@ const drawPersonLine = (g, person, xScale, categoryY, locations, handlers) => {
       handlers.showContextMenu(event.pageX, event.pageY, person)
     })
 
-  // Name label (centered on the bar)
-  lineGroup
-    .append('text')
-    .attr('x', (x1 + x2) / 2)
-    .attr('y', y - barHeight / 2 - 4)
-    .attr('text-anchor', 'middle')
-    .attr('font-size', '11px')
-    .attr('font-weight', '600')
-    .attr('fill', '#333')
-    .text(person.name)
+  // Name label (3-tier zoom system)
+  if (yearRange <= 1000) {
+    const label = yearRange <= 400 ? person.name : (person.short_name || person.name)
+    lineGroup
+      .append('text')
+      .attr('x', (x1 + x2) / 2)
+      .attr('y', y - barHeight / 2 - 4)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '11px')
+      .attr('font-weight', '600')
+      .attr('fill', '#333')
+      .text(label)
+  }
 }
 
 /**
  * Draw event bar
  */
-const drawEventBar = (g, event, xScale, categoryY, locations, handlers) => {
+const drawEventBar = (g, event, xScale, categoryY, locations, handlers, yearRange) => {
   const y = categoryY + (event.position.y || 0) + 40
   const x1 = xScale(event.start_year)
   const x2 = xScale(event.end_year || event.start_year + 1)
@@ -595,16 +600,19 @@ const drawEventBar = (g, event, xScale, categoryY, locations, handlers) => {
       handlers.showContextMenu(event.pageX, event.pageY, event)
     })
 
-  // Name label above the bar
-  eventGroup
-    .append('text')
-    .attr('x', (x1 + x2) / 2)
-    .attr('y', y - barHeight / 2 - 4)
-    .attr('text-anchor', 'middle')
-    .attr('font-size', '11px')
-    .attr('font-weight', '600')
-    .attr('fill', '#333')
-    .text(event.name)
+  // Name label (3-tier zoom system)
+  if (yearRange <= 1000) {
+    const label = yearRange <= 400 ? event.name : (event.short_name || event.name)
+    eventGroup
+      .append('text')
+      .attr('x', (x1 + x2) / 2)
+      .attr('y', y - barHeight / 2 - 4)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '11px')
+      .attr('font-weight', '600')
+      .attr('fill', '#333')
+      .text(label)
+  }
 }
 
 export default TimelineCanvas
