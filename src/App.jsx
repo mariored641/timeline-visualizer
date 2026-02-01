@@ -16,13 +16,18 @@ function App() {
   const lastSyncError = useStore((state) => state.lastSyncError)
   const initializeFromApi = useStore((state) => state.initializeFromApi)
 
-  // Load data from API on mount + refresh every 30s
+  // Load data from API on mount + refresh when user returns to tab
   useEffect(() => {
     initializeFromApi()
-    const interval = setInterval(() => {
-      initializeFromApi()
-    }, 30000)
-    return () => clearInterval(interval)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        initializeFromApi()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
   // Block browser zoom EXCEPT on timeline
