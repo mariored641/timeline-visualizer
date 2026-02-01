@@ -52,6 +52,7 @@ const WikipediaImport = () => {
       // Set data for preview
       setData({
         name: entityData.name,
+        short_name: '',
         birth: entityData.birth,
         death: entityData.death,
         categories: entityData.occupations,
@@ -74,9 +75,13 @@ const WikipediaImport = () => {
 
   const toggleCategory = (catId) => {
     setData(prev => {
-      const cats = prev.categories.includes(catId)
-        ? prev.categories.filter(c => c !== catId)
-        : [...prev.categories, catId]
+      let cats
+      if (prev.categories.includes(catId)) {
+        cats = prev.categories.filter(c => c !== catId)
+      } else {
+        // Remove 'other' when user selects a real category
+        cats = [...prev.categories.filter(c => c !== 'other'), catId]
+      }
       return { ...prev, categories: cats.length > 0 ? cats : prev.categories }
     })
   }
@@ -87,6 +92,8 @@ const WikipediaImport = () => {
     const newPerson = {
       id: `${data.name.toLowerCase().replace(/\s+/g, '_')}_${data.birth}`,
       ...data,
+      categories: data.categories.filter(c => c !== 'other'),
+      short_name: data.short_name || null,
       secondary_location: null,
       location_change_year: null
     }
@@ -156,6 +163,18 @@ const WikipediaImport = () => {
                     type="text"
                     value={data.name}
                     onChange={(e) => updateField('name', e.target.value)}
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+
+                {/* Short name - editable */}
+                <div className="flex items-center gap-3">
+                  <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שם קצר:</span>
+                  <input
+                    type="text"
+                    value={data.short_name || ''}
+                    onChange={(e) => updateField('short_name', e.target.value)}
+                    placeholder="כינוי / שם מקוצר"
                     className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                 </div>
