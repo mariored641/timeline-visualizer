@@ -86,8 +86,8 @@ const useStore = create((set, get) => ({
       if (data) {
         set({
           metadata: data.metadata || timelineData.metadata,
-          categories: data.categories || timelineData.categories,
-          locations: data.locations || timelineData.locations,
+          categories: timelineData.categories,   // תמיד מהקובץ המקומי
+          locations: timelineData.locations,      // תמיד מהקובץ המקומי
           people: data.people || timelineData.people,
           events: data.events || timelineData.events,
           isLoading: false,
@@ -105,8 +105,6 @@ const useStore = create((set, get) => ({
     const state = get();
     const dataToSync = {
       metadata: state.metadata,
-      categories: state.categories,
-      locations: state.locations,
       people: state.people,
       events: state.events,
     };
