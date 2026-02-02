@@ -16,15 +16,22 @@ class WikidataService {
         throw new Error('Invalid Wikipedia URL')
       }
 
+      // Detect the correct Wikipedia API base from the URL language
+      const langMatch = wikipediaUrl.match(/https?:\/\/(\w+)\.wikipedia\.org/)
+      const lang = langMatch ? langMatch[1] : 'en'
+      const apiBase = `https://${lang}.wikipedia.org/w/api.php`
+
       const params = new URLSearchParams({
         action: 'query',
         prop: 'pageprops',
+        ppprop: 'wikibase_item',
         titles: pageTitle,
         format: 'json',
-        origin: '*'
+        origin: '*',
+        redirects: '1'
       })
 
-      const response = await fetch(`${WIKIPEDIA_API}?${params}`)
+      const response = await fetch(`${apiBase}?${params}`)
       const data = await response.json()
 
       const pages = data.query.pages
@@ -356,6 +363,28 @@ class WikidataService {
     // Convert to Wikimedia Commons URL
     const encodedFilename = encodeURIComponent(filename.replace(/ /g, '_'))
     return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodedFilename}?width=300`
+  }
+
+  /**
+   * Fetch only the image URL for a given Wikidata ID
+   * Lightweight alternative to fetchEntityData when only image is needed
+   */
+  async fetchImageByWikidataId(wikidataId) {
+    try {
+      if (!wikidataId) return null
+
+      const url = `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`
+      const response = await fetch(url)
+      const data = await response.json()
+
+      const entity = data.entities[wikidataId]
+      if (!entity) return null
+
+      return await this.extractImage(entity)
+    } catch (error) {
+      console.warn('Could not fetch image for', wikidataId, error)
+      return null
+    }
   }
 
   /**

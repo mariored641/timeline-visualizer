@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import useStore from '../../store/useStore'
+import wikidataService from '../../services/wikidataService'
 
 const DetailPanel = () => {
   const detailPanelOpen = useStore((state) => state.detailPanelOpen)
@@ -11,12 +12,74 @@ const DetailPanel = () => {
   const updateEvent = useStore((state) => state.updateEvent)
 
   const [editData, setEditData] = useState({})
+  const [fetchingImage, setFetchingImage] = useState(false)
 
   useEffect(() => {
     if (detailPanelItem) {
       setEditData({ ...detailPanelItem })
     }
   }, [detailPanelItem, detailPanelEditing])
+
+  // Auto-fetch image from Wikidata if missing
+  // Prefer deriving wikidata_id from wikipedia_url (more reliable than AI-provided wikidata_id)
+  useEffect(() => {
+    const item = detailPanelItem
+    if (!item || item.image_url) return
+    if (!item.wikidata_id && !item.wikipedia_url) return
+
+    let cancelled = false
+    setFetchingImage(true)
+
+    const fetchImage = async () => {
+      try {
+        let wikidataId = null
+
+        // Try to get real wikidata_id from wikipedia_url first (most reliable)
+        if (item.wikipedia_url) {
+          try {
+            wikidataId = await wikidataService.getWikidataIdFromWikipediaUrl(item.wikipedia_url)
+          } catch {
+            // Wikipedia URL didn't resolve, fall back to provided wikidata_id
+          }
+        }
+
+        // Fall back to provided wikidata_id
+        if (!wikidataId) wikidataId = item.wikidata_id
+        if (!wikidataId) return null
+
+        // Also save the correct wikidata_id if it was wrong
+        const updates = {}
+        if (wikidataId !== item.wikidata_id) {
+          updates.wikidata_id = wikidataId
+        }
+
+        const imageUrl = await wikidataService.fetchImageByWikidataId(wikidataId)
+        if (imageUrl) updates.image_url = imageUrl
+
+        return Object.keys(updates).length > 0 ? updates : null
+      } catch {
+        return null
+      }
+    }
+
+    fetchImage().then((updates) => {
+      if (cancelled || !updates) {
+        setFetchingImage(false)
+        return
+      }
+      const isPerson = !!item.birth
+      if (isPerson) {
+        updatePerson(item.id, updates)
+      } else {
+        updateEvent(item.id, updates)
+      }
+      setFetchingImage(false)
+    }).catch(() => {
+      if (!cancelled) setFetchingImage(false)
+    })
+
+    return () => { cancelled = true }
+  }, [detailPanelItem?.id])
 
   if (!detailPanelOpen || !detailPanelItem) {
     return null
@@ -99,7 +162,7 @@ const DetailPanel = () => {
         {/* Content */}
         <div className="p-6 space-y-4">
           {/* Image */}
-          {item.image_url && (
+          {item.image_url ? (
             <div className="flex justify-center">
               <img
                 src={item.image_url}
@@ -107,7 +170,13 @@ const DetailPanel = () => {
                 className="w-48 h-48 object-cover rounded-lg shadow-md"
               />
             </div>
-          )}
+          ) : fetchingImage ? (
+            <div className="flex justify-center">
+              <div className="w-48 h-48 rounded-lg bg-gray-100 flex items-center justify-center">
+                <div className="animate-spin w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full" />
+              </div>
+            </div>
+          ) : null}
 
           {/* Details */}
           <div className="space-y-3">
