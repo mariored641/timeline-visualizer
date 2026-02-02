@@ -15,7 +15,12 @@ const Tooltip = () => {
         top: `${tooltip.y + 10}px`
       }}
     >
-      {tooltip.content}
+      {typeof tooltip.content === 'string'
+        ? tooltip.content.split('\n').map((line, i) => (
+            <div key={i}>{line}</div>
+          ))
+        : tooltip.content
+      }
     </div>
   )
 }

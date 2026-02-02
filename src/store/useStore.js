@@ -40,9 +40,17 @@ const useStore = create((set, get) => ({
   // פריט נבחר
   selectedItem: null,
 
+  // מצב סימון
+  markingMode: false,
+  highlightedItems: [], // Array of item IDs
+
+  // גרירה אנכית - אופסטים ידניים
+  dragOffsets: {}, // { itemId: deltaY }
+
   // פאנל פרטים
   detailPanelOpen: false,
   detailPanelItem: null,
+  detailPanelEditing: false,
 
   // מודל הוספה
   addModalOpen: false,
@@ -396,9 +404,36 @@ const useStore = create((set, get) => ({
   openImportModal: (type) => set({ importModalOpen: true, importModalType: type }),
   closeImportModal: () => set({ importModalOpen: false, importModalType: null }),
 
+  // Marking mode
+  toggleMarkingMode: () => set((state) => ({ markingMode: !state.markingMode })),
+  toggleHighlight: (itemId) => set((state) => ({
+    highlightedItems: state.highlightedItems.includes(itemId)
+      ? state.highlightedItems.filter(id => id !== itemId)
+      : [...state.highlightedItems, itemId]
+  })),
+  clearHighlights: () => set({ highlightedItems: [] }),
+
+  // Drag offsets (vertical free drag)
+  setDragOffset: (itemId, deltaY) => set((state) => ({
+    dragOffsets: { ...state.dragOffsets, [itemId]: deltaY }
+  })),
+  setDragOffsets: (offsets) => set((state) => ({
+    dragOffsets: { ...state.dragOffsets, ...offsets }
+  })),
+  clearDragOffsets: () => set({ dragOffsets: {} }),
+
+  // Category reorder
+  reorderCategories: (fromIndex, toIndex) => set((state) => {
+    const newCategories = [...state.categories]
+    const [moved] = newCategories.splice(fromIndex, 1)
+    newCategories.splice(toIndex, 0, moved)
+    return { categories: newCategories.map((c, i) => ({ ...c, order: i + 1 })) }
+  }),
+
   // Detail panel
-  openDetailPanel: (item) => set({ detailPanelOpen: true, detailPanelItem: item }),
-  closeDetailPanel: () => set({ detailPanelOpen: false, detailPanelItem: null }),
+  openDetailPanel: (item) => set({ detailPanelOpen: true, detailPanelItem: item, detailPanelEditing: false }),
+  closeDetailPanel: () => set({ detailPanelOpen: false, detailPanelItem: null, detailPanelEditing: false }),
+  toggleDetailEditing: () => set((state) => ({ detailPanelEditing: !state.detailPanelEditing })),
 
   // Tooltip
   showTooltip: (x, y, content) => set({ tooltip: { visible: true, x, y, content } }),

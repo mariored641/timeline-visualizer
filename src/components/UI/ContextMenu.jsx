@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import useStore from '../../store/useStore'
 
 const ContextMenu = () => {
@@ -11,6 +11,8 @@ const ContextMenu = () => {
   const showParallelLines = useStore((state) => state.showParallelLines)
   const deletePerson = useStore((state) => state.deletePerson)
   const deleteEvent = useStore((state) => state.deleteEvent)
+  const menuRef = useRef(null)
+  const [adjustedPos, setAdjustedPos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     const handleClick = () => hideContextMenu()
@@ -28,6 +30,25 @@ const ContextMenu = () => {
       document.removeEventListener('keydown', handleEscape)
     }
   }, [contextMenu.visible, hideContextMenu])
+
+  // Adjust position to keep menu within viewport
+  useEffect(() => {
+    if (contextMenu.visible && menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect()
+      const viewportH = window.innerHeight
+      const viewportW = window.innerWidth
+      let x = contextMenu.x
+      let y = contextMenu.y
+
+      if (y + rect.height > viewportH - 10) {
+        y = Math.max(10, viewportH - rect.height - 10)
+      }
+      if (x + rect.width > viewportW - 10) {
+        x = Math.max(10, viewportW - rect.width - 10)
+      }
+      setAdjustedPos({ x, y })
+    }
+  }, [contextMenu.visible, contextMenu.x, contextMenu.y])
 
   if (!contextMenu.visible || !contextMenu.item) {
     return null
@@ -109,10 +130,11 @@ const ContextMenu = () => {
 
   return (
     <div
+      ref={menuRef}
       className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[200px]"
       style={{
-        left: `${contextMenu.x}px`,
-        top: `${contextMenu.y}px`
+        left: `${adjustedPos.x || contextMenu.x}px`,
+        top: `${adjustedPos.y || contextMenu.y}px`
       }}
       onClick={(e) => e.stopPropagation()}
     >

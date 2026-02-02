@@ -39,7 +39,10 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  touch-action: none;
+}
+
+.timeline-container {
+  touch-action: pan-y;
 }
 
 html, body {
@@ -316,4 +319,23 @@ input[type="range"]::-moz-range-thumb:hover {
   width: 40px;
   height: 40px;
   animation: spin 0.8s linear infinite;
+}
+
+/* Highlight glow animation for marked items */
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; stroke-width: 3; }
+  50% { opacity: 1; stroke-width: 5; }
+}
+
+.highlight-glow {
+  animation: glowPulse 1.5s ease-in-out infinite;
+}
+
+/* Category drag handle */
+.drag-handle {
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
