@@ -69,10 +69,10 @@
     "western_europe": { "name": "מערב אירופה", "color": "#2ECC71", "region": "western_europe", "icon": "🇫🇷" },
     "southern_europe": { "name": "דרום אירופה", "color": "#58D68D", "region": "southern_europe", "icon": "🇮🇹" },
     "eastern_europe": { "name": "מזרח אירופה", "color": "#1ABC9C", "region": "eastern_europe", "icon": "🇷🇺" },
-    "north_america": { "name": "צפון אמריקה", "color": "#922B21", "region": "north_america", "icon": "🇺🇸" },
-    "south_america": { "name": "דרום אמריקה", "color": "#E84393", "region": "south_america", "icon": "🇧🇷" },
-    "asia": { "name": "אסיה", "color": "#F1C40F", "region": "asia", "icon": "🇨🇳" },
-    "oceania": { "name": "אוקיאניה", "color": "#8B6914", "region": "oceania", "icon": "🇦🇺" },
+    "north_america": { "name": "צפון אמריקה", "color": "#f22511", "region": "north_america", "icon": "🇺🇸" },
+    "south_america": { "name": "דרום אמריקה", "color": "#fa3997", "region": "south_america", "icon": "🇧🇷" },
+    "asia": { "name": "אסיה", "color": "#f1e60f", "region": "asia", "icon": "🇨🇳" },
+    "oceania": { "name": "אוקיאניה", "color": "#11f2c9", "region": "oceania", "icon": "🇦🇺" },
     "africa": { "name": "אפריקה", "color": "#E67E22", "region": "africa", "icon": "🇿🇦" }
   },
   "people": [
