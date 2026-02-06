@@ -12,9 +12,7 @@ const AddEventModal = () => {
     name: '',
     start_year: '',
     end_year: '',
-    category: 'war',
     location: '',
-    icon: '⚔️',
     description: ''
   })
 
@@ -30,9 +28,8 @@ const AddEventModal = () => {
       name: formData.name,
       start_year: parseInt(formData.start_year),
       end_year: formData.end_year ? parseInt(formData.end_year) : null,
-      category: formData.category,
+      category: 'events',
       location: formData.location,
-      icon: formData.icon,
       wikidata_id: null,
       wikipedia_url: null,
       description: formData.description
@@ -46,21 +43,10 @@ const AddEventModal = () => {
       name: '',
       start_year: '',
       end_year: '',
-      category: 'war',
       location: '',
-      icon: '⚔️',
       description: ''
     })
   }
-
-  const eventCategories = [
-    { id: 'war', name: 'מלחמה', icon: '⚔️' },
-    { id: 'revolution', name: 'מהפכה', icon: '🔥' },
-    { id: 'discovery', name: 'גילוי', icon: '🔬' },
-    { id: 'disaster', name: 'אסון', icon: '🌋' },
-    { id: 'political', name: 'פוליטי', icon: '🏛️' },
-    { id: 'economic', name: 'כלכלי', icon: '💰' }
-  ]
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -110,34 +96,6 @@ const AddEventModal = () => {
               />
             </FormField>
           </div>
-
-          <FormField label="קטגוריה *" required>
-            <div className="grid grid-cols-3 gap-2">
-              {eventCategories.map((cat) => (
-                <label
-                  key={cat.id}
-                  className={`px-3 py-2 border rounded-lg cursor-pointer transition-colors text-center ${
-                    formData.category === cat.id
-                      ? 'bg-blue-500 text-white border-blue-500'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="category"
-                    value={cat.id}
-                    checked={formData.category === cat.id}
-                    onChange={(e) => {
-                      setFormData({ ...formData, category: e.target.value, icon: cat.icon })
-                    }}
-                    className="sr-only"
-                  />
-                  <div>{cat.icon}</div>
-                  <div className="text-sm">{cat.name}</div>
-                </label>
-              ))}
-            </div>
-          </FormField>
 
           <FormField label="מיקום *" required>
             <select

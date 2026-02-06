@@ -16,6 +16,11 @@ const HISTORICAL_PERIODS = [
   { name: 'המאה ה-21', start: 2000, end: 2100, color: 'rgba(218, 235, 245, 0.25)' },
 ]
 
+// Track last right-click for double-right-click detection
+let lastRightClick = { id: null, time: 0 }
+// Suppress context menu briefly after double-right-click hide
+let suppressContextMenuUntil = 0
+
 /**
  * Sticky year ruler component (used for top and bottom)
  */
@@ -87,6 +92,8 @@ const TimelineCanvas = () => {
   const dragOffsets = useStore((state) => state.dragOffsets)
   const setDragOffset = useStore((state) => state.setDragOffset)
   const setDragOffsets = useStore((state) => state.setDragOffsets)
+  const toggleItemVisibility = useStore((state) => state.toggleItemVisibility)
+  const setVerticalScale = useStore((state) => state.setVerticalScale)
 
   // Handle resize
   useEffect(() => {
@@ -113,6 +120,9 @@ const TimelineCanvas = () => {
       window.removeEventListener('resize', updateDimensions)
     }
   }, [])
+
+  // Vertical scale from zoomState
+  const verticalScale = zoomState.verticalScale || 1.0
 
   // Main drawing effect
   useEffect(() => {
@@ -156,6 +166,15 @@ const TimelineCanvas = () => {
 
     const yearRange = zoomState.endYear - zoomState.startYear
 
+    // Scaled row spacing
+    const scaledRowSpacing = MIN_ROW_SPACING * verticalScale
+
+    // View context for name-aware layout
+    const viewContext = {
+      viewportWidth: innerWidth,
+      yearRange: yearRange
+    }
+
     // Group items by category and calculate layout
     const visibleCategories = categories.filter((c) => c.visible)
 
@@ -170,11 +189,12 @@ const TimelineCanvas = () => {
           p.categories[0] === category.id
       )
 
-      const categoryEvents = events.filter(
-        (e) => e.category === category.id && !e.visibility.isHidden
-      )
+      // All events belong to "events" category
+      const categoryEvents = category.id === 'events'
+        ? events.filter((e) => !e.visibility.isHidden)
+        : []
 
-      calculateOptimalLayout([...categoryPeople, ...categoryEvents], category.id)
+      calculateOptimalLayout([...categoryPeople, ...categoryEvents], category.id, viewContext)
 
       const maxY = Math.max(
         ...categoryPeople.map((p) => p.position.y || 0),
@@ -189,7 +209,7 @@ const TimelineCanvas = () => {
         startY: currentY
       })
 
-      currentY += maxY + 100
+      currentY += (maxY * verticalScale) + (100 * verticalScale)
     })
 
     const actualContentHeight = Math.max(innerHeight, currentY)
@@ -214,8 +234,8 @@ const TimelineCanvas = () => {
           id: person.id,
           type: 'person',
           categoryId: category.id,
-          baseY: startY + (person.position.y || 0) + 40,
-          effectiveY: startY + (person.position.y || 0) + 40 + dragOff,
+          baseY: startY + ((person.position.y || 0) * verticalScale) + (40 * verticalScale),
+          effectiveY: startY + ((person.position.y || 0) * verticalScale) + (40 * verticalScale) + (dragOff * verticalScale),
           birth: person.birth,
           death: person.death,
           start_year: person.birth,
@@ -229,8 +249,8 @@ const TimelineCanvas = () => {
           id: evt.id,
           type: 'event',
           categoryId: category.id,
-          baseY: startY + (evt.position.y || 0) + 40,
-          effectiveY: startY + (evt.position.y || 0) + 40 + dragOff,
+          baseY: startY + ((evt.position.y || 0) * verticalScale) + (40 * verticalScale),
+          effectiveY: startY + ((evt.position.y || 0) * verticalScale) + (40 * verticalScale) + (dragOff * verticalScale),
           start_year: evt.start_year,
           end_year: evt.end_year,
           isPinned: false,
@@ -251,25 +271,26 @@ const TimelineCanvas = () => {
       setDragOffsets,
       dragOffsets,
       allVisibleItems,
+      toggleItemVisibility,
     }
 
     // Draw all categories
     categoryData.forEach(({ category, categoryPeople, categoryEvents, startY }) => {
       g.append('text')
         .attr('x', -10)
-        .attr('y', startY + 20)
+        .attr('y', startY + 20 * verticalScale)
         .attr('text-anchor', 'end')
-        .attr('font-size', '14px')
+        .attr('font-size', `${Math.max(9, 14 * verticalScale)}px`)
         .attr('font-weight', 'bold')
         .attr('fill', category.color)
         .text(category.name)
 
       categoryPeople.forEach((person) => {
-        drawPersonLine(g, person, xScale, startY, locations, handlers, yearRange, defs)
+        drawPersonLine(g, person, xScale, startY, locations, handlers, yearRange, defs, verticalScale)
       })
 
       categoryEvents.forEach((evt) => {
-        drawEventBar(g, evt, xScale, startY, locations, handlers, yearRange)
+        drawEventBar(g, evt, xScale, startY, locations, handlers, yearRange, verticalScale)
       })
     })
 
@@ -279,7 +300,7 @@ const TimelineCanvas = () => {
     dimensions, people, events, categories, locations, zoomState,
     parallelLines, showTooltip, hideTooltip, showContextMenu,
     openDetailPanel, markingMode, highlightedItems, toggleHighlight,
-    dragOffsets, setDragOffset, setDragOffsets
+    dragOffsets, setDragOffset, setDragOffsets, toggleItemVisibility, verticalScale
   ])
 
   // Wheel handler - improved trackpad support
@@ -288,7 +309,7 @@ const TimelineCanvas = () => {
     const PAN_SENSITIVITY = 0.8
 
     if (e.ctrlKey || e.metaKey) {
-      // Pinch-to-zoom on trackpad
+      // Pinch-to-zoom on trackpad - affects BOTH axes
       e.preventDefault()
       e.stopPropagation()
 
@@ -296,7 +317,7 @@ const TimelineCanvas = () => {
       const currentRange = zoomState.endYear - zoomState.startYear
       const newRange = currentRange * (1 + zoomDelta)
 
-      // Zoom toward mouse position
+      // Zoom toward mouse position (horizontal)
       const rect = containerRef.current.getBoundingClientRect()
       const mouseX = e.clientX - rect.left - 50 // margin.left
       const mouseRatio = mouseX / (rect.width - 100) // innerWidth
@@ -314,6 +335,10 @@ const TimelineCanvas = () => {
           Math.min(zoomState.maxYear, newEndYear)
         )
       }
+
+      // Also adjust vertical scale in sync
+      const vScale = (zoomState.verticalScale || 1.0) * (1 - zoomDelta)
+      setVerticalScale(vScale)
     } else if (Math.abs(e.deltaX) > 2 || (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 0.5 && Math.abs(e.deltaX) > 1)) {
       // Horizontal swipe - pan timeline
       e.preventDefault()
@@ -329,7 +354,7 @@ const TimelineCanvas = () => {
       }
     }
     // Vertical scroll: let browser handle it naturally (don't prevent default)
-  }, [zoomState, setZoomRange])
+  }, [zoomState, setZoomRange, setVerticalScale])
 
   // Background drag panning (mousedown on empty space)
   const dragStartY = useRef(0)
@@ -570,7 +595,7 @@ const drawParallelLines = (g, xScale, height, parallelLines) => {
 }
 
 /**
- * Check if two items overlap in time
+ * Check if two items overlap in time (including label width consideration)
  */
 const itemsOverlapInTime = (itemA, itemB) => {
   const startA = itemA.birth || itemA.start_year
@@ -601,15 +626,6 @@ const collidesWithPlaced = (item, candidateY, positions, allItems) => {
 /**
  * Given all items with their original Y positions and the dragged
  * item's snapped target Y, compute where every item should end up.
- *
- * Algorithm:
- * 1. Place dragged item at its snapped target row.
- * 2. For every other item (sorted by distance from original position to
- *    the dragged item), try to keep it at its original Y.
- * 3. If that spot collides, search outward (alternating up/down) for
- *    the nearest free row. This prevents runaway one-directional pushing.
- *
- * Returns a Map of itemId -> newY
  */
 const computePreviewPositions = (allItems, draggedId, draggedTargetY) => {
   const positions = new Map()
@@ -618,14 +634,12 @@ const computePreviewPositions = (allItems, draggedId, draggedTargetY) => {
   positions.set(draggedId, draggedTargetY)
 
   // Sort others by original Y - process items closest to the drag target first
-  // so they get placed before distant items
   const draggedItem = allItems.find(i => i.id === draggedId)
   const dragOriginY = draggedItem ? draggedItem.originalY : draggedTargetY
 
   const others = allItems
     .filter(item => item.id !== draggedId)
     .sort((a, b) => {
-      // Items directly displaced (near the drag zone) go first
       const distA = Math.abs(a.originalY - dragOriginY)
       const distB = Math.abs(b.originalY - dragOriginY)
       return distA - distB
@@ -640,7 +654,6 @@ const computePreviewPositions = (allItems, draggedId, draggedTargetY) => {
     }
 
     // Collision at original spot - search for nearest free row
-    // Alternate up and down from original position
     for (let offset = 1; offset <= 30; offset++) {
       const tryDown = item.originalY + offset * MIN_ROW_SPACING
       if (!collidesWithPlaced(item, tryDown, positions, allItems)) {
@@ -655,7 +668,7 @@ const computePreviewPositions = (allItems, draggedId, draggedTargetY) => {
       }
     }
 
-    // Fallback: stay at original (shouldn't happen)
+    // Fallback: stay at original
     positions.set(item.id, item.originalY)
   })
 
@@ -664,18 +677,14 @@ const computePreviewPositions = (allItems, draggedId, draggedTargetY) => {
 
 /**
  * Setup smart vertical drag with preview-from-scratch approach.
- *
- * On every drag tick, we compute the full preview state from scratch:
- * "If the user released right now, where would everything end up?"
- * This is shown as a live preview. On release, we commit only the final state.
  */
 const setupVerticalDrag = (group, itemId, handlers) => {
   let startMouseY = 0
   let currentOffset = 0
   let dragStartEffectiveY = 0
-  let allCategoryItems = [] // frozen snapshot of all category items at drag start
+  let allCategoryItems = []
   let svgNode = null
-  let lastPreview = null // last computed preview (to avoid redundant animations)
+  let lastPreview = null
 
   const drag = d3.drag()
     .clickDistance(5)
@@ -691,7 +700,7 @@ const setupVerticalDrag = (group, itemId, handlers) => {
 
       dragStartEffectiveY = thisItem.effectiveY
 
-      // Snapshot ALL visible items across all categories (frozen - never mutated)
+      // Snapshot ALL visible items across all categories (frozen)
       allCategoryItems = handlers.allVisibleItems
         .filter(other => !other.isPinned)
         .map(item => ({
@@ -711,7 +720,7 @@ const setupVerticalDrag = (group, itemId, handlers) => {
       const deltaY = event.y - startMouseY
       const draggedVisualY = dragStartEffectiveY + deltaY
 
-      // Move the dragged element visually (free movement, follows mouse)
+      // Move the dragged element visually
       d3.select(this).attr('transform', `translate(0, ${deltaY})`).attr('opacity', 0.85)
 
       // Snap the dragged item's target to nearest row
@@ -729,7 +738,6 @@ const setupVerticalDrag = (group, itemId, handlers) => {
         const displacement = previewY - item.originalY
         const lastDisplacement = lastPreview ? (lastPreview.get(item.id) || item.originalY) - item.originalY : 0
 
-        // Only animate if position changed from last preview
         if (Math.abs(displacement - lastDisplacement) > 0.5) {
           const node = d3.select(svgNode).select(`[data-item-id="${item.id}"]`)
           if (!node.empty()) {
@@ -753,12 +761,10 @@ const setupVerticalDrag = (group, itemId, handlers) => {
       const deltaY = event.y - startMouseY
 
       if (Math.abs(deltaY) > 3) {
-        // Compute final positions
         const draggedVisualY = dragStartEffectiveY + deltaY
         const snappedTargetY = Math.round(draggedVisualY / MIN_ROW_SPACING) * MIN_ROW_SPACING
         const finalPositions = computePreviewPositions(allCategoryItems, itemId, snappedTargetY)
 
-        // Convert to offset deltas and commit
         const batchOffsets = {}
         finalPositions.forEach((newY, id) => {
           const item = allCategoryItems.find(i => i.id === id)
@@ -773,7 +779,6 @@ const setupVerticalDrag = (group, itemId, handlers) => {
 
         handlers.setDragOffsets(batchOffsets)
       } else {
-        // Reset all preview transforms (no meaningful drag)
         allCategoryItems.forEach(item => {
           if (item.id === itemId) return
           const node = d3.select(svgNode).select(`[data-item-id="${item.id}"]`)
@@ -790,14 +795,44 @@ const setupVerticalDrag = (group, itemId, handlers) => {
 }
 
 /**
+ * Handle right-click with double-right-click detection.
+ * On double right-click: hide item and suppress any context menu that might
+ * fire on the element that takes its place.
+ */
+const handleRightClick = (e, item, handlers) => {
+  e.preventDefault()
+  e.stopPropagation()
+  const now = Date.now()
+
+  // If we're in suppression window (just did a double-right-click hide), ignore
+  if (now < suppressContextMenuUntil) {
+    return
+  }
+
+  const type = item.birth !== undefined ? 'person' : 'event'
+
+  if (lastRightClick.id === item.id && (now - lastRightClick.time) < 400) {
+    // Double right-click on same item: hide temporarily
+    handlers.toggleItemVisibility(item.id, type)
+    lastRightClick = { id: null, time: 0 }
+    // Suppress any context menu events for the next 500ms
+    suppressContextMenuUntil = now + 500
+  } else {
+    // Single right-click: show context menu
+    lastRightClick = { id: item.id, time: now }
+    handlers.showContextMenu(e.pageX, e.pageY, item)
+  }
+}
+
+/**
  * Draw person bar
  */
-const drawPersonLine = (g, person, xScale, categoryY, locations, handlers, yearRange, defs) => {
+const drawPersonLine = (g, person, xScale, categoryY, locations, handlers, yearRange, defs, vScale) => {
   const dragOffset = handlers.dragOffsets[person.id] || 0
-  const y = categoryY + (person.position.y || 0) + 40 + dragOffset
+  const y = categoryY + ((person.position.y || 0) * vScale) + (40 * vScale) + (dragOffset * vScale)
   const x1 = xScale(person.birth)
   const x2 = xScale(person.death || new Date().getFullYear())
-  const barHeight = 20
+  const barHeight = Math.max(8, 20 * vScale)
 
   const gradient = createLocationGradient(person, locations)
   const isHighlighted = handlers.highlightedItems.includes(person.id)
@@ -858,7 +893,7 @@ const drawPersonLine = (g, person, xScale, categoryY, locations, handlers, yearR
     .attr('height', barHeight)
     .attr('fill', fillAttr)
     .attr('opacity', isHighlighted ? 0.95 : 0.7)
-    .attr('rx', 4)
+    .attr('rx', Math.min(4, barHeight / 4))
     .attr('cursor', 'pointer')
     .on('mouseenter', function (e) {
       d3.select(this).attr('opacity', 0.9)
@@ -880,19 +915,19 @@ const drawPersonLine = (g, person, xScale, categoryY, locations, handlers, yearR
       }
     })
     .on('contextmenu', (e) => {
-      e.preventDefault()
-      handlers.showContextMenu(e.pageX, e.pageY, person)
+      handleRightClick(e, person, handlers)
     })
 
   // Name label (3-tier zoom system) - show always for highlighted
-  if (yearRange <= 1000 || isHighlighted) {
+  const fontSize = Math.max(7, (isHighlighted ? 12 : 11) * Math.min(vScale, 1.2))
+  if ((yearRange <= 1000 || isHighlighted) && vScale >= 0.3) {
     const label = yearRange <= 400 ? person.name : (person.short_name || person.name)
     lineGroup
       .append('text')
       .attr('x', (x1 + x2) / 2)
-      .attr('y', y - barHeight / 2 - 4)
+      .attr('y', y - barHeight / 2 - Math.max(2, 4 * vScale))
       .attr('text-anchor', 'middle')
-      .attr('font-size', isHighlighted ? '12px' : '11px')
+      .attr('font-size', `${fontSize}px`)
       .attr('font-weight', isHighlighted ? '700' : '600')
       .attr('fill', isHighlighted ? '#B8860B' : '#333')
       .attr('pointer-events', 'none')
@@ -904,17 +939,16 @@ const drawPersonLine = (g, person, xScale, categoryY, locations, handlers, yearR
 }
 
 /**
- * Draw event bar
+ * Draw event bar (with dot rendering for single-year events)
  */
-const drawEventBar = (g, evt, xScale, categoryY, locations, handlers, yearRange) => {
+const drawEventBar = (g, evt, xScale, categoryY, locations, handlers, yearRange, vScale) => {
   const dragOffset = handlers.dragOffsets[evt.id] || 0
-  const y = categoryY + (evt.position.y || 0) + 40 + dragOffset
-  const x1 = xScale(evt.start_year)
-  const x2 = xScale(evt.end_year || evt.start_year + 1)
-  const barHeight = 20
+  const y = categoryY + ((evt.position.y || 0) * vScale) + (40 * vScale) + (dragOffset * vScale)
+  const barHeight = Math.max(8, 20 * vScale)
 
   const color = getColorForLocation(evt.location, locations)
   const isHighlighted = handlers.highlightedItems.includes(evt.id)
+  const isSingleYear = !evt.end_year || evt.end_year === evt.start_year
 
   const eventGroup = g.append('g')
     .attr('class', 'event-bar')
@@ -922,65 +956,123 @@ const drawEventBar = (g, evt, xScale, categoryY, locations, handlers, yearRange)
     .attr('data-base-transform', '')
     .style('cursor', 'grab')
 
-  // Glow effect for highlighted items
-  if (isHighlighted) {
+  if (isSingleYear) {
+    // Single-year event: render as a dot
+    const cx = xScale(evt.start_year)
+    const dotRadius = Math.max(4, 8 * vScale)
+
+    // Glow effect for highlighted
+    if (isHighlighted) {
+      eventGroup
+        .append('circle')
+        .attr('cx', cx)
+        .attr('cy', y)
+        .attr('r', dotRadius + 3)
+        .attr('fill', 'none')
+        .attr('stroke', '#FFD700')
+        .attr('stroke-width', 3)
+        .attr('filter', 'url(#glow)')
+        .attr('class', 'highlight-glow')
+    }
+
+    eventGroup
+      .append('circle')
+      .attr('cx', cx)
+      .attr('cy', y)
+      .attr('r', dotRadius)
+      .attr('fill', color)
+      .attr('opacity', isHighlighted ? 0.95 : 0.8)
+      .attr('stroke', '#fff')
+      .attr('stroke-width', 1.5)
+      .attr('cursor', 'pointer')
+      .on('mouseenter', function (e) {
+        d3.select(this).attr('opacity', 1).attr('r', dotRadius + 2)
+        handlers.showTooltip(
+          e.pageX,
+          e.pageY,
+          `${evt.name}\n${evt.start_year}`
+        )
+      })
+      .on('mouseleave', function () {
+        d3.select(this).attr('opacity', isHighlighted ? 0.95 : 0.8).attr('r', dotRadius)
+        handlers.hideTooltip()
+      })
+      .on('click', () => {
+        if (handlers.markingMode) {
+          handlers.toggleHighlight(evt.id)
+        } else {
+          handlers.openDetailPanel(evt)
+        }
+      })
+      .on('contextmenu', (e) => {
+        handleRightClick(e, evt, handlers)
+      })
+  } else {
+    // Multi-year event: render as rectangle
+    const x1 = xScale(evt.start_year)
+    const x2 = xScale(evt.end_year)
+
+    // Glow effect for highlighted items
+    if (isHighlighted) {
+      eventGroup
+        .append('rect')
+        .attr('x', x1 - 3)
+        .attr('y', y - barHeight / 2 - 3)
+        .attr('width', Math.max(x2 - x1, 2) + 6)
+        .attr('height', barHeight + 6)
+        .attr('fill', 'none')
+        .attr('stroke', '#FFD700')
+        .attr('stroke-width', 3)
+        .attr('rx', 6)
+        .attr('filter', 'url(#glow)')
+        .attr('class', 'highlight-glow')
+    }
+
     eventGroup
       .append('rect')
-      .attr('x', x1 - 3)
-      .attr('y', y - barHeight / 2 - 3)
-      .attr('width', Math.max(x2 - x1, 2) + 6)
-      .attr('height', barHeight + 6)
-      .attr('fill', 'none')
-      .attr('stroke', '#FFD700')
-      .attr('stroke-width', 3)
-      .attr('rx', 6)
-      .attr('filter', 'url(#glow)')
-      .attr('class', 'highlight-glow')
+      .attr('x', x1)
+      .attr('y', y - barHeight / 2)
+      .attr('width', Math.max(x2 - x1, 2))
+      .attr('height', barHeight)
+      .attr('fill', color)
+      .attr('opacity', isHighlighted ? 0.95 : 0.7)
+      .attr('rx', Math.min(4, barHeight / 4))
+      .attr('cursor', 'pointer')
+      .on('mouseenter', function (e) {
+        d3.select(this).attr('opacity', 0.9)
+        handlers.showTooltip(
+          e.pageX,
+          e.pageY,
+          `${evt.name}\n${evt.start_year}–${evt.end_year}`
+        )
+      })
+      .on('mouseleave', function () {
+        d3.select(this).attr('opacity', isHighlighted ? 0.95 : 0.7)
+        handlers.hideTooltip()
+      })
+      .on('click', () => {
+        if (handlers.markingMode) {
+          handlers.toggleHighlight(evt.id)
+        } else {
+          handlers.openDetailPanel(evt)
+        }
+      })
+      .on('contextmenu', (e) => {
+        handleRightClick(e, evt, handlers)
+      })
   }
 
-  eventGroup
-    .append('rect')
-    .attr('x', x1)
-    .attr('y', y - barHeight / 2)
-    .attr('width', Math.max(x2 - x1, 2))
-    .attr('height', barHeight)
-    .attr('fill', color)
-    .attr('opacity', isHighlighted ? 0.95 : 0.7)
-    .attr('rx', 4)
-    .attr('cursor', 'pointer')
-    .on('mouseenter', function (e) {
-      d3.select(this).attr('opacity', 0.9)
-      handlers.showTooltip(
-        e.pageX,
-        e.pageY,
-        `${evt.name}\n${evt.start_year}${evt.end_year ? `–${evt.end_year}` : ''}`
-      )
-    })
-    .on('mouseleave', function () {
-      d3.select(this).attr('opacity', isHighlighted ? 0.95 : 0.7)
-      handlers.hideTooltip()
-    })
-    .on('click', () => {
-      if (handlers.markingMode) {
-        handlers.toggleHighlight(evt.id)
-      } else {
-        handlers.openDetailPanel(evt)
-      }
-    })
-    .on('contextmenu', (e) => {
-      e.preventDefault()
-      handlers.showContextMenu(e.pageX, e.pageY, evt)
-    })
-
   // Name label
-  if (yearRange <= 1000 || isHighlighted) {
+  const fontSize = Math.max(7, (isHighlighted ? 12 : 11) * Math.min(vScale, 1.2))
+  if ((yearRange <= 1000 || isHighlighted) && vScale >= 0.3) {
     const label = yearRange <= 400 ? evt.name : (evt.short_name || evt.name)
+    const labelX = isSingleYear ? xScale(evt.start_year) : (xScale(evt.start_year) + xScale(evt.end_year)) / 2
     eventGroup
       .append('text')
-      .attr('x', (x1 + x2) / 2)
-      .attr('y', y - barHeight / 2 - 4)
+      .attr('x', labelX)
+      .attr('y', y - (isSingleYear ? Math.max(5, 10 * vScale) : barHeight / 2) - Math.max(2, 4 * vScale))
       .attr('text-anchor', 'middle')
-      .attr('font-size', isHighlighted ? '12px' : '11px')
+      .attr('font-size', `${fontSize}px`)
       .attr('font-weight', isHighlighted ? '700' : '600')
       .attr('fill', isHighlighted ? '#B8860B' : '#333')
       .attr('pointer-events', 'none')

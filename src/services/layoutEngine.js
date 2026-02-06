@@ -2,10 +2,59 @@ import { hasTimeOverlap } from '../utils/dateUtils'
 
 const MIN_SPACING = 35 // Minimum pixels between lines
 
+// Approximate character width for Hebrew/Latin text at 11px font
+const CHAR_WIDTH_PX = 7
+const LABEL_PADDING_PX = 16 // Extra padding around label
+
+/**
+ * Estimate the pixel width of a label
+ */
+const estimateLabelWidth = (item) => {
+  const name = item.short_name || item.name || ''
+  return name.length * CHAR_WIDTH_PX + LABEL_PADDING_PX
+}
+
+/**
+ * Convert pixel width to year span based on viewport context
+ */
+const pixelsToYears = (px, viewportWidth, yearRange) => {
+  if (!viewportWidth || !yearRange || viewportWidth <= 0) return 0
+  return (px / viewportWidth) * yearRange
+}
+
+/**
+ * Get the effective time range of an item, accounting for label width
+ */
+const getEffectiveTimeRange = (item, viewportWidth, yearRange) => {
+  const itemStart = item.birth || item.start_year
+  const itemEnd = item.death || item.end_year || new Date().getFullYear()
+
+  if (!viewportWidth || !yearRange) {
+    return { start: itemStart, end: itemEnd }
+  }
+
+  const labelWidthPx = estimateLabelWidth(item)
+  const labelYears = pixelsToYears(labelWidthPx, viewportWidth, yearRange)
+
+  // Center of the item in years
+  const itemCenter = (itemStart + itemEnd) / 2
+  const itemSpanYears = itemEnd - itemStart
+
+  // The effective span is the max of the item's actual span and the label width
+  const effectiveSpan = Math.max(itemSpanYears, labelYears)
+  const effectiveStart = itemCenter - effectiveSpan / 2
+  const effectiveEnd = itemCenter + effectiveSpan / 2
+
+  return { start: effectiveStart, end: effectiveEnd }
+}
+
 /**
  * Calculate optimal layout for items
+ * @param {Array} items - items to layout
+ * @param {string} categoryId - category identifier
+ * @param {object} viewContext - optional {viewportWidth, yearRange} for name-aware layout
  */
-export const calculateOptimalLayout = (items, categoryId) => {
+export const calculateOptimalLayout = (items, categoryId, viewContext) => {
   // Sort by start year
   const sortedItems = [...items].sort((a, b) => {
     const startA = a.birth || a.start_year
@@ -14,6 +63,8 @@ export const calculateOptimalLayout = (items, categoryId) => {
   })
 
   const rows = []
+  const viewportWidth = viewContext?.viewportWidth || 0
+  const yearRange = viewContext?.yearRange || 0
 
   for (const item of sortedItems) {
     // Skip hidden items
@@ -28,7 +79,7 @@ export const calculateOptimalLayout = (items, categoryId) => {
     let placedInRow = false
 
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-      if (canFitInRow(item, rows[rowIndex])) {
+      if (canFitInRow(item, rows[rowIndex], viewportWidth, yearRange)) {
         rows[rowIndex].items.push(item)
         item.position.y = rowIndex * MIN_SPACING
         placedInRow = true
@@ -51,17 +102,15 @@ export const calculateOptimalLayout = (items, categoryId) => {
 }
 
 /**
- * Check if item can fit in row without overlap
+ * Check if item can fit in row without overlap (including label width)
  */
-const canFitInRow = (item, row) => {
-  const itemStart = item.birth || item.start_year
-  const itemEnd = item.death || item.end_year || new Date().getFullYear()
+const canFitInRow = (item, row, viewportWidth, yearRange) => {
+  const itemRange = getEffectiveTimeRange(item, viewportWidth, yearRange)
 
   for (const existingItem of row.items) {
-    const existingStart = existingItem.birth || existingItem.start_year
-    const existingEnd = existingItem.death || existingItem.end_year || new Date().getFullYear()
+    const existingRange = getEffectiveTimeRange(existingItem, viewportWidth, yearRange)
 
-    if (hasTimeOverlap(itemStart, itemEnd, existingStart, existingEnd)) {
+    if (hasTimeOverlap(itemRange.start, itemRange.end, existingRange.start, existingRange.end)) {
       return false
     }
   }

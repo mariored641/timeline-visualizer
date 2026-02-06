@@ -92,7 +92,8 @@ const getCategoryCount = (categoryId) => {
     p.categories.includes(categoryId)
   ).length
 
-  const eventsCount = events.filter((e) => e.category === categoryId).length
+  // All events belong to "events" category only
+  const eventsCount = categoryId === 'events' ? events.length : 0
 
   return peopleCount + eventsCount
 }

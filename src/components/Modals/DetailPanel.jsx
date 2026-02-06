@@ -10,6 +10,7 @@ const DetailPanel = () => {
   const toggleDetailEditing = useStore((state) => state.toggleDetailEditing)
   const updatePerson = useStore((state) => state.updatePerson)
   const updateEvent = useStore((state) => state.updateEvent)
+  const categories = useStore((state) => state.categories)
 
   const [editData, setEditData] = useState({})
   const [fetchingImage, setFetchingImage] = useState(false)
@@ -21,7 +22,6 @@ const DetailPanel = () => {
   }, [detailPanelItem, detailPanelEditing])
 
   // Auto-fetch image from Wikidata if missing
-  // Prefer deriving wikidata_id from wikipedia_url (more reliable than AI-provided wikidata_id)
   useEffect(() => {
     const item = detailPanelItem
     if (!item || item.image_url) return
@@ -34,7 +34,6 @@ const DetailPanel = () => {
       try {
         let wikidataId = null
 
-        // Try to get real wikidata_id from wikipedia_url first (most reliable)
         if (item.wikipedia_url) {
           try {
             wikidataId = await wikidataService.getWikidataIdFromWikipediaUrl(item.wikipedia_url)
@@ -43,11 +42,9 @@ const DetailPanel = () => {
           }
         }
 
-        // Fall back to provided wikidata_id
         if (!wikidataId) wikidataId = item.wikidata_id
         if (!wikidataId) return null
 
-        // Also save the correct wikidata_id if it was wrong
         const updates = {}
         if (wikidataId !== item.wikidata_id) {
           updates.wikidata_id = wikidataId
@@ -92,21 +89,30 @@ const DetailPanel = () => {
     if (isPerson) {
       updatePerson(item.id, {
         name: editData.name,
-        short_name: editData.short_name,
+        short_name: editData.short_name || null,
         birth: Number(editData.birth),
         death: editData.death ? Number(editData.death) : null,
-        description: editData.description,
+        description: editData.description || null,
         primary_location: editData.primary_location,
-        secondary_location: editData.secondary_location,
+        secondary_location: editData.secondary_location || null,
+        location_change_year: editData.location_change_year ? Number(editData.location_change_year) : null,
+        categories: editData.categories || item.categories,
+        wikipedia_url: editData.wikipedia_url || null,
+        wikidata_id: editData.wikidata_id || null,
+        image_url: editData.image_url || null,
       })
     } else {
       updateEvent(item.id, {
         name: editData.name,
-        short_name: editData.short_name,
+        short_name: editData.short_name || null,
         start_year: Number(editData.start_year),
         end_year: editData.end_year ? Number(editData.end_year) : null,
-        description: editData.description,
+        description: editData.description || null,
         location: editData.location,
+        category: 'events',
+        wikipedia_url: editData.wikipedia_url || null,
+        wikidata_id: editData.wikidata_id || null,
+        image_url: editData.image_url || null,
       })
     }
     toggleDetailEditing()
@@ -115,6 +121,18 @@ const DetailPanel = () => {
 
   const handleFieldChange = (field, value) => {
     setEditData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleCategoryToggle = (catId) => {
+    setEditData(prev => {
+      const currentCats = prev.categories || []
+      if (currentCats.includes(catId)) {
+        // Don't allow removing the last category
+        if (currentCats.length <= 1) return prev
+        return { ...prev, categories: currentCats.filter(c => c !== catId) }
+      }
+      return { ...prev, categories: [...currentCats, catId] }
+    })
   }
 
   return (
@@ -189,6 +207,29 @@ const DetailPanel = () => {
                     <EditRow label="שנת פטירה" value={editData.death || ''} onChange={(v) => handleFieldChange('death', v)} type="number" placeholder="ריק = בחיים" />
                     <EditRow label="מיקום ראשי" value={editData.primary_location || ''} onChange={(v) => handleFieldChange('primary_location', v)} />
                     <EditRow label="מיקום משני" value={editData.secondary_location || ''} onChange={(v) => handleFieldChange('secondary_location', v)} placeholder="אופציונלי" />
+                    <EditRow label="שנת החלפת מיקום" value={editData.location_change_year || ''} onChange={(v) => handleFieldChange('location_change_year', v)} type="number" placeholder="אופציונלי" />
+
+                    {/* Categories multi-select */}
+                    <div className="flex gap-3">
+                      <span className="font-semibold text-gray-700 min-w-[100px]">קטגוריות:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {categories.map(cat => (
+                          <label key={cat.id} className="flex items-center gap-1 text-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={(editData.categories || []).includes(cat.id)}
+                              onChange={() => handleCategoryToggle(cat.id)}
+                              className="rounded border-gray-300"
+                            />
+                            <span style={{ color: cat.color }}>{cat.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <EditRow label="קישור ויקיפדיה" value={editData.wikipedia_url || ''} onChange={(v) => handleFieldChange('wikipedia_url', v)} placeholder="https://he.wikipedia.org/wiki/..." />
+                    <EditRow label="Wikidata ID" value={editData.wikidata_id || ''} onChange={(v) => handleFieldChange('wikidata_id', v)} placeholder="Q12345" />
+                    <EditRow label="קישור תמונה" value={editData.image_url || ''} onChange={(v) => handleFieldChange('image_url', v)} placeholder="https://..." />
                     <EditRowTextarea label="תיאור" value={editData.description || ''} onChange={(v) => handleFieldChange('description', v)} />
                   </>
                 ) : (
@@ -203,8 +244,11 @@ const DetailPanel = () => {
                     />
                     <DetailRow
                       label="מיקום"
-                      value={item.primary_location + (item.secondary_location ? ` → ${item.secondary_location}` : '')}
+                      value={item.primary_location + (item.secondary_location ? ` → ${item.secondary_location}` : '') + (item.location_change_year ? ` (${item.location_change_year})` : '')}
                     />
+                    {item.wikidata_id && (
+                      <DetailRow label="Wikidata" value={item.wikidata_id} />
+                    )}
                   </>
                 )}
               </>
@@ -216,6 +260,9 @@ const DetailPanel = () => {
                     <EditRow label="שנת התחלה" value={editData.start_year || ''} onChange={(v) => handleFieldChange('start_year', v)} type="number" />
                     <EditRow label="שנת סיום" value={editData.end_year || ''} onChange={(v) => handleFieldChange('end_year', v)} type="number" placeholder="אופציונלי" />
                     <EditRow label="מיקום" value={editData.location || ''} onChange={(v) => handleFieldChange('location', v)} />
+                    <EditRow label="קישור ויקיפדיה" value={editData.wikipedia_url || ''} onChange={(v) => handleFieldChange('wikipedia_url', v)} placeholder="https://he.wikipedia.org/wiki/..." />
+                    <EditRow label="Wikidata ID" value={editData.wikidata_id || ''} onChange={(v) => handleFieldChange('wikidata_id', v)} placeholder="Q12345" />
+                    <EditRow label="קישור תמונה" value={editData.image_url || ''} onChange={(v) => handleFieldChange('image_url', v)} placeholder="https://..." />
                     <EditRowTextarea label="תיאור" value={editData.description || ''} onChange={(v) => handleFieldChange('description', v)} />
                   </>
                 ) : (
@@ -225,13 +272,12 @@ const DetailPanel = () => {
                       value={`${item.start_year}${item.end_year ? `–${item.end_year}` : ''}`}
                     />
                     <DetailRow
-                      label="קטגוריה"
-                      value={item.category}
-                    />
-                    <DetailRow
                       label="מיקום"
                       value={item.location}
                     />
+                    {item.wikidata_id && (
+                      <DetailRow label="Wikidata" value={item.wikidata_id} />
+                    )}
                   </>
                 )}
               </>

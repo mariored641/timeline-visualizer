@@ -23,7 +23,8 @@ const useStore = create((set, get) => ({
     endYear: timelineData.ui_state.zoom.end_year,
     minYear: -3000,
     maxYear: 2100,
-    zoomLevel: 1.0
+    zoomLevel: 1.0,
+    verticalScale: 1.0
   },
 
   // השוואה
@@ -125,6 +126,7 @@ const useStore = create((set, get) => ({
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
   // Zoom actions
+  // Combined zoom (both axes)
   zoomIn: () => set((state) => {
     const { startYear, endYear } = state.zoomState;
     const range = endYear - startYear;
@@ -136,7 +138,8 @@ const useStore = create((set, get) => ({
         ...state.zoomState,
         startYear: Math.floor(center - newRange / 2),
         endYear: Math.ceil(center + newRange / 2),
-        zoomLevel: state.zoomState.zoomLevel * 1.43
+        zoomLevel: state.zoomState.zoomLevel * 1.43,
+        verticalScale: Math.min(state.zoomState.verticalScale * 1.3, 3.0)
       }
     };
   }),
@@ -152,10 +155,59 @@ const useStore = create((set, get) => ({
         ...state.zoomState,
         startYear: Math.max(minYear, Math.floor(center - newRange / 2)),
         endYear: Math.min(maxYear, Math.ceil(center + newRange / 2)),
+        zoomLevel: state.zoomState.zoomLevel * 0.7,
+        verticalScale: Math.max(state.zoomState.verticalScale * 0.77, 0.15)
+      }
+    };
+  }),
+
+  // Horizontal-only zoom
+  zoomInHorizontal: () => set((state) => {
+    const { startYear, endYear } = state.zoomState;
+    const range = endYear - startYear;
+    const newRange = range * 0.7;
+    const center = (startYear + endYear) / 2;
+
+    return {
+      zoomState: {
+        ...state.zoomState,
+        startYear: Math.floor(center - newRange / 2),
+        endYear: Math.ceil(center + newRange / 2),
+        zoomLevel: state.zoomState.zoomLevel * 1.43
+      }
+    };
+  }),
+
+  zoomOutHorizontal: () => set((state) => {
+    const { startYear, endYear, minYear, maxYear } = state.zoomState;
+    const range = endYear - startYear;
+    const newRange = range * 1.43;
+    const center = (startYear + endYear) / 2;
+
+    return {
+      zoomState: {
+        ...state.zoomState,
+        startYear: Math.max(minYear, Math.floor(center - newRange / 2)),
+        endYear: Math.min(maxYear, Math.ceil(center + newRange / 2)),
         zoomLevel: state.zoomState.zoomLevel * 0.7
       }
     };
   }),
+
+  // Vertical-only zoom
+  zoomInVertical: () => set((state) => ({
+    zoomState: {
+      ...state.zoomState,
+      verticalScale: Math.min(state.zoomState.verticalScale * 1.3, 3.0)
+    }
+  })),
+
+  zoomOutVertical: () => set((state) => ({
+    zoomState: {
+      ...state.zoomState,
+      verticalScale: Math.max(state.zoomState.verticalScale * 0.77, 0.15)
+    }
+  })),
 
   panLeft: () => set((state) => {
     const { startYear, endYear, minYear } = state.zoomState;
@@ -196,6 +248,14 @@ const useStore = create((set, get) => ({
       ...state.zoomState,
       startYear,
       endYear
+    }
+  })),
+
+  // Set vertical scale directly (used by pinch-to-zoom)
+  setVerticalScale: (scale) => set((state) => ({
+    zoomState: {
+      ...state.zoomState,
+      verticalScale: Math.max(0.15, Math.min(3.0, scale))
     }
   })),
 
@@ -419,6 +479,74 @@ const useStore = create((set, get) => ({
     dragOffsets: { ...state.dragOffsets, ...offsets }
   })),
   clearDragOffsets: () => set({ dragOffsets: {} }),
+
+  // Compact layout: remove empty rows while preserving the current visual order
+  // This ensures that if user dragged A below B, A stays below B after compaction
+  compactLayout: () => {
+    const state = get();
+    const MIN_SPACING = 35;
+    const visibleCategories = state.categories.filter(c => c.visible);
+    const newOffsets = {};
+
+    visibleCategories.forEach(category => {
+      const categoryPeople = state.people.filter(
+        p => p.categories.includes(category.id) && !p.visibility.isHidden && p.categories[0] === category.id
+      );
+      // All events belong to "events" category
+      const categoryEvents = category.id === 'events'
+        ? state.events.filter(e => !e.visibility.isHidden)
+        : [];
+      const allItems = [...categoryPeople, ...categoryEvents];
+
+      // Get effective Y for each item (current visual position)
+      const itemsWithY = allItems.map(item => ({
+        id: item.id,
+        baseY: item.position.y || 0,
+        dragOffset: state.dragOffsets[item.id] || 0,
+        effectiveY: (item.position.y || 0) + (state.dragOffsets[item.id] || 0),
+        // Store time range for overlap checking
+        timeStart: item.birth || item.start_year,
+        timeEnd: item.death || item.end_year || new Date().getFullYear(),
+      }));
+
+      // Sort by current effective Y (this preserves the user's drag order)
+      itemsWithY.sort((a, b) => a.effectiveY - b.effectiveY);
+
+      // Now assign compact rows, processing items in the order they appear visually.
+      // Each item goes to the FIRST row where it fits (no time overlap),
+      // but we never place it ABOVE items that were visually above it.
+      const rows = []; // rows[r] = array of items in that row
+      const itemRowMap = new Map(); // itemId -> assigned row index
+
+      itemsWithY.forEach(item => {
+        let placedInRow = -1;
+
+        for (let r = 0; r < rows.length; r++) {
+          const canFit = rows[r].every(other =>
+            item.timeEnd < other.timeStart || item.timeStart > other.timeEnd
+          );
+          if (canFit) {
+            placedInRow = r;
+            break;
+          }
+        }
+
+        if (placedInRow === -1) {
+          placedInRow = rows.length;
+          rows.push([]);
+        }
+
+        rows[placedInRow].push(item);
+        itemRowMap.set(item.id, placedInRow);
+
+        const targetY = placedInRow * MIN_SPACING;
+        const neededOffset = targetY - item.baseY;
+        newOffsets[item.id] = Math.abs(neededOffset) > 0.5 ? neededOffset : 0;
+      });
+    });
+
+    set({ dragOffsets: newOffsets });
+  },
 
   // Category reorder
   reorderCategories: (fromIndex, toIndex) => set((state) => {
