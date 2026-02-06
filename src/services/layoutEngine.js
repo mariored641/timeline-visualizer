@@ -23,13 +23,33 @@ const pixelsToYears = (px, viewportWidth, yearRange) => {
 }
 
 /**
- * Get the effective time range of an item, accounting for label width
+ * Get the actual time range of an item (start/end years).
+ * For people: uses birth/death. For events: uses start_year/end_year.
+ * Events without end_year are treated as single-year (end = start).
+ * People without death are treated as alive (end = current year).
+ */
+const getItemTimeRange = (item) => {
+  const isPerson = item.birth !== undefined
+  const itemStart = item.birth || item.start_year
+  let itemEnd
+  if (isPerson) {
+    itemEnd = item.death || new Date().getFullYear()
+  } else {
+    // Events: missing/zero end_year means single-year event
+    itemEnd = (item.end_year && item.end_year !== item.start_year) ? item.end_year : itemStart
+  }
+  return { start: itemStart, end: itemEnd }
+}
+
+/**
+ * Get the effective time range of an item, accounting for label width.
+ * Only pads for labels when they are actually visible (yearRange <= 1000).
  */
 const getEffectiveTimeRange = (item, viewportWidth, yearRange) => {
-  const itemStart = item.birth || item.start_year
-  const itemEnd = item.death || item.end_year || new Date().getFullYear()
+  const { start: itemStart, end: itemEnd } = getItemTimeRange(item)
 
-  if (!viewportWidth || !yearRange) {
+  // Only account for label width when labels are actually displayed (yearRange <= 1000)
+  if (!viewportWidth || !yearRange || yearRange > 1000) {
     return { start: itemStart, end: itemEnd }
   }
 
@@ -129,12 +149,10 @@ export const handleCollisions = (draggedItem, allItems) => {
     if (otherItem.position?.isPinned) continue // Pinned items don't move
 
     // Check time overlap
-    const draggedStart = draggedItem.birth || draggedItem.start_year
-    const draggedEnd = draggedItem.death || draggedItem.end_year || new Date().getFullYear()
-    const otherStart = otherItem.birth || otherItem.start_year
-    const otherEnd = otherItem.death || otherItem.end_year || new Date().getFullYear()
+    const draggedRange = getItemTimeRange(draggedItem)
+    const otherRange = getItemTimeRange(otherItem)
 
-    const hasTimeOverlapBool = hasTimeOverlap(draggedStart, draggedEnd, otherStart, otherEnd)
+    const hasTimeOverlapBool = hasTimeOverlap(draggedRange.start, draggedRange.end, otherRange.start, otherRange.end)
 
     if (hasTimeOverlapBool) {
       // Check Y distance
