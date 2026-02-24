@@ -26,9 +26,11 @@ const WikipediaImport = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [data, setData] = useState(null)
+  const [entityType, setEntityType] = useState('person') // 'person' | 'event'
 
   const closeImportModal = useStore((state) => state.closeImportModal)
   const addPerson = useStore((state) => state.addPerson)
+  const addEvent = useStore((state) => state.addEvent)
   const categories = useStore((state) => state.categories)
   const locations = useStore((state) => state.locations)
 
@@ -37,31 +39,47 @@ const WikipediaImport = () => {
     setError(null)
 
     try {
-      // Get Wikidata ID
-      const wikidataId = await wikidataService.getWikidataIdFromWikipediaUrl(url)
-      if (!wikidataId) {
+      // Get Wikidata ID + language
+      const result = await wikidataService.getWikidataIdFromWikipediaUrl(url)
+      if (!result || !result.wikidataId) {
         throw new Error('לא נמצא מזהה Wikidata')
       }
+      const { wikidataId, lang } = result
 
       // Fetch entity data
-      const entityData = await wikidataService.fetchEntityData(wikidataId)
+      const entityData = await wikidataService.fetchEntityData(wikidataId, lang)
       if (!entityData) {
         throw new Error('לא ניתן לשלוף נתונים')
       }
 
-      // Set data for preview
-      setData({
-        name: entityData.name,
-        short_name: '',
-        birth: entityData.birth,
-        death: entityData.death,
-        categories: entityData.occupations,
-        primary_location: entityData.birthPlace || entityData.citizenship,
-        wikidata_id: wikidataId,
-        wikipedia_url: url,
-        image_url: entityData.image,
-        description: entityData.description
-      })
+      const detectedType = entityData.entityType || 'person'
+      setEntityType(detectedType)
+
+      if (detectedType === 'event') {
+        setData({
+          name: entityData.name,
+          start_year: entityData.start_year,
+          end_year: entityData.end_year,
+          location: entityData.location,
+          wikidata_id: wikidataId,
+          wikipedia_url: url,
+          image_url: entityData.image,
+          description: entityData.description
+        })
+      } else {
+        setData({
+          name: entityData.name,
+          short_name: '',
+          birth: entityData.birth,
+          death: entityData.death,
+          categories: entityData.occupations,
+          primary_location: entityData.birthPlace || entityData.citizenship,
+          wikidata_id: wikidataId,
+          wikipedia_url: url,
+          image_url: entityData.image,
+          description: entityData.description
+        })
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -86,19 +104,66 @@ const WikipediaImport = () => {
     })
   }
 
+  const handleTypeChange = (newType) => {
+    setEntityType(newType)
+    // Reset type-specific fields when switching
+    if (newType === 'event') {
+      setData(prev => ({
+        name: prev.name,
+        start_year: prev.birth || prev.start_year || null,
+        end_year: prev.death || prev.end_year || null,
+        location: prev.primary_location || prev.location || null,
+        wikidata_id: prev.wikidata_id,
+        wikipedia_url: prev.wikipedia_url,
+        image_url: prev.image_url,
+        description: prev.description
+      }))
+    } else {
+      setData(prev => ({
+        name: prev.name,
+        short_name: prev.short_name || '',
+        birth: prev.start_year || prev.birth || null,
+        death: prev.end_year || prev.death || null,
+        categories: prev.categories || ['other'],
+        primary_location: prev.location || prev.primary_location || null,
+        wikidata_id: prev.wikidata_id,
+        wikipedia_url: prev.wikipedia_url,
+        image_url: prev.image_url,
+        description: prev.description
+      }))
+    }
+  }
+
   const handleConfirm = () => {
     if (!data) return
 
-    const newPerson = {
-      id: `${data.name.toLowerCase().replace(/\s+/g, '_')}_${data.birth}`,
-      ...data,
-      categories: data.categories.filter(c => c !== 'other'),
-      short_name: data.short_name || null,
-      secondary_location: null,
-      location_change_year: null
+    if (entityType === 'event') {
+      const newEvent = {
+        id: `${data.name.toLowerCase().replace(/\s+/g, '_')}_${data.start_year}`,
+        name: data.name,
+        start_year: data.start_year,
+        end_year: data.end_year || null,
+        category: 'events',
+        location: data.location || null,
+        wikidata_id: data.wikidata_id,
+        wikipedia_url: data.wikipedia_url,
+        description: data.description,
+        position: { y: null, isManuallyPlaced: false },
+        visibility: { isHidden: false }
+      }
+      addEvent(newEvent)
+    } else {
+      const newPerson = {
+        id: `${data.name.toLowerCase().replace(/\s+/g, '_')}_${data.birth}`,
+        ...data,
+        categories: (data.categories || []).filter(c => c !== 'other'),
+        short_name: data.short_name || null,
+        secondary_location: null,
+        location_change_year: null
+      }
+      addPerson(newPerson)
     }
 
-    addPerson(newPerson)
     closeImportModal()
   }
 
@@ -149,6 +214,33 @@ const WikipediaImport = () => {
             <div className="space-y-4 border-t pt-4">
               <h3 className="text-lg font-bold text-gray-800">אישור ועריכת נתונים</h3>
 
+              {/* Entity type selector */}
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-700 text-sm">סוג:</span>
+                <div className="flex rounded-lg overflow-hidden border border-gray-300">
+                  <button
+                    onClick={() => handleTypeChange('person')}
+                    className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                      entityType === 'person'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    אדם
+                  </button>
+                  <button
+                    onClick={() => handleTypeChange('event')}
+                    className={`px-4 py-1.5 text-sm font-medium transition-colors border-r border-gray-300 ${
+                      entityType === 'event'
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    ארוע
+                  </button>
+                </div>
+              </div>
+
               {data.image_url && (
                 <div className="flex justify-center">
                   <img src={data.image_url} alt={data.name} className="w-32 h-32 object-cover rounded-lg" />
@@ -156,7 +248,7 @@ const WikipediaImport = () => {
               )}
 
               <div className="space-y-3">
-                {/* Name - editable */}
+                {/* Name - editable (always shown) */}
                 <div className="flex items-center gap-3">
                   <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שם:</span>
                   <input
@@ -167,78 +259,122 @@ const WikipediaImport = () => {
                   />
                 </div>
 
-                {/* Short name - editable */}
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שם קצר:</span>
-                  <input
-                    type="text"
-                    value={data.short_name || ''}
-                    onChange={(e) => updateField('short_name', e.target.value)}
-                    placeholder="כינוי / שם מקוצר"
-                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
+                {entityType === 'person' ? (
+                  <>
+                    {/* Short name */}
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שם קצר:</span>
+                      <input
+                        type="text"
+                        value={data.short_name || ''}
+                        onChange={(e) => updateField('short_name', e.target.value)}
+                        placeholder="כינוי / שם מקוצר"
+                        className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
 
-                {/* Birth year - editable */}
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שנת לידה:</span>
-                  <input
-                    type="number"
-                    value={data.birth || ''}
-                    onChange={(e) => updateField('birth', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
+                    {/* Birth year */}
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שנת לידה:</span>
+                      <input
+                        type="number"
+                        value={data.birth || ''}
+                        onChange={(e) => updateField('birth', e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
 
-                {/* Death year - editable */}
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שנת פטירה:</span>
-                  <input
-                    type="number"
-                    value={data.death || ''}
-                    onChange={(e) => updateField('death', e.target.value ? parseInt(e.target.value) : null)}
-                    placeholder="ריק = עדיין חי"
-                    className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
+                    {/* Death year */}
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שנת פטירה:</span>
+                      <input
+                        type="number"
+                        value={data.death || ''}
+                        onChange={(e) => updateField('death', e.target.value ? parseInt(e.target.value) : null)}
+                        placeholder="ריק = עדיין חי"
+                        className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
 
-                {/* Categories - toggleable pills */}
-                <div className="flex items-start gap-3">
-                  <span className="font-semibold text-gray-700 min-w-[80px] text-sm pt-1">קטגוריות:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {categories.filter(c => c.id !== 'events').map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => toggleCategory(cat.id)}
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                          data.categories.includes(cat.id)
-                            ? 'text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                        style={data.categories.includes(cat.id) ? { backgroundColor: cat.color } : {}}
+                    {/* Categories */}
+                    <div className="flex items-start gap-3">
+                      <span className="font-semibold text-gray-700 min-w-[80px] text-sm pt-1">קטגוריות:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {categories.filter(c => c.id !== 'events').map(cat => (
+                          <button
+                            key={cat.id}
+                            onClick={() => toggleCategory(cat.id)}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                              (data.categories || []).includes(cat.id)
+                                ? 'text-white shadow-sm'
+                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                            }`}
+                            style={(data.categories || []).includes(cat.id) ? { backgroundColor: cat.color } : {}}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Location */}
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-700 min-w-[80px] text-sm">מיקום:</span>
+                      <select
+                        value={data.primary_location || ''}
+                        onChange={(e) => updateField('primary_location', e.target.value || null)}
+                        className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                       >
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                        <option value="">לא ידוע</option>
+                        {Object.entries(locations).map(([id, loc]) => (
+                          <option key={id} value={id}>{loc.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Start year */}
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שנת התחלה:</span>
+                      <input
+                        type="number"
+                        value={data.start_year || ''}
+                        onChange={(e) => updateField('start_year', e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      />
+                    </div>
 
-                {/* Location - dropdown */}
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-gray-700 min-w-[80px] text-sm">מיקום:</span>
-                  <select
-                    value={data.primary_location || ''}
-                    onChange={(e) => updateField('primary_location', e.target.value || null)}
-                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  >
-                    <option value="">לא ידוע</option>
-                    {Object.entries(locations).map(([id, loc]) => (
-                      <option key={id} value={id}>{loc.name}</option>
-                    ))}
-                  </select>
-                </div>
+                    {/* End year */}
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-700 min-w-[80px] text-sm">שנת סיום:</span>
+                      <input
+                        type="number"
+                        value={data.end_year || ''}
+                        onChange={(e) => updateField('end_year', e.target.value ? parseInt(e.target.value) : null)}
+                        placeholder="ריק = ארוע חד-פעמי"
+                        className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      />
+                    </div>
 
-                {/* Description - editable */}
+                    {/* Location */}
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-700 min-w-[80px] text-sm">מיקום:</span>
+                      <select
+                        value={data.location || ''}
+                        onChange={(e) => updateField('location', e.target.value || null)}
+                        className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      >
+                        <option value="">לא ידוע</option>
+                        {Object.entries(locations).map(([id, loc]) => (
+                          <option key={id} value={id}>{loc.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {/* Description - editable (always shown) */}
                 <div className="flex items-start gap-3">
                   <span className="font-semibold text-gray-700 min-w-[80px] text-sm pt-1">תיאור:</span>
                   <textarea
@@ -252,7 +388,11 @@ const WikipediaImport = () => {
 
               <button
                 onClick={handleConfirm}
-                className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                className={`w-full px-6 py-3 text-white rounded-lg transition-colors ${
+                  entityType === 'event'
+                    ? 'bg-orange-500 hover:bg-orange-600'
+                    : 'bg-green-500 hover:bg-green-600'
+                }`}
               >
                 אשר והוסף
               </button>

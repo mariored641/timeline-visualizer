@@ -7,7 +7,7 @@ const WIKIPEDIA_API = 'https://en.wikipedia.org/w/api.php'
 
 class WikidataService {
   /**
-   * Get Wikidata ID from Wikipedia URL
+   * Get Wikidata ID from Wikipedia URL - returns { wikidataId, lang }
    */
   async getWikidataIdFromWikipediaUrl(wikipediaUrl) {
     try {
@@ -47,7 +47,7 @@ class WikidataService {
         throw new Error('No Wikidata ID found')
       }
 
-      return wikidataId
+      return { wikidataId, lang }
     } catch (error) {
       console.error('Error fetching Wikidata ID:', error)
       throw error
@@ -57,7 +57,7 @@ class WikidataService {
   /**
    * Fetch entity data from Wikidata
    */
-  async fetchEntityData(wikidataId) {
+  async fetchEntityData(wikidataId, lang = 'en') {
     try {
       const url = `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`
       const response = await fetch(url)
@@ -69,20 +69,51 @@ class WikidataService {
         throw new Error('Entity not found')
       }
 
+      const entityType = this.detectEntityType(entity)
+
+      if (entityType === 'event') {
+        const location = await this.extractEventLocation(entity)
+        return {
+          entityType,
+          name: this.extractLabel(entity, lang),
+          start_year: this.extractEventStartYear(entity),
+          end_year: this.extractEventEndYear(entity),
+          location,
+          image: await this.extractImage(entity),
+          description: this.extractDescription(entity, lang)
+        }
+      }
+
       return {
-        name: this.extractLabel(entity),
+        entityType,
+        name: this.extractLabel(entity, lang),
         birth: this.extractBirthDate(entity),
         death: this.extractDeathDate(entity),
         occupations: this.extractOccupations(entity),
         birthPlace: await this.extractBirthPlace(entity),
         citizenship: await this.extractCitizenship(entity),
         image: await this.extractImage(entity),
-        description: this.extractDescription(entity)
+        description: this.extractDescription(entity, lang)
       }
     } catch (error) {
       console.error('Error fetching entity data:', error)
       throw error
     }
+  }
+
+  /**
+   * Detect whether entity is a person or event
+   */
+  detectEntityType(entity) {
+    const instanceOf = entity.claims?.P31
+    if (!instanceOf || instanceOf.length === 0) return 'event'
+
+    for (const claim of instanceOf) {
+      const qid = claim.mainsnak?.datavalue?.value?.id
+      if (qid === 'Q5') return 'person' // human
+    }
+
+    return 'event'
   }
 
   /**
@@ -94,9 +125,12 @@ class WikidataService {
   }
 
   /**
-   * Extract label (name)
+   * Extract label (name) - prefers language of the source URL
    */
-  extractLabel(entity) {
+  extractLabel(entity, lang = 'en') {
+    if (lang === 'he') {
+      return entity.labels?.he?.value || entity.labels?.en?.value || 'Unknown'
+    }
     return entity.labels?.en?.value || entity.labels?.he?.value || 'Unknown'
   }
 
@@ -388,10 +422,70 @@ class WikidataService {
   }
 
   /**
-   * Extract description
+   * Extract description - prefers Hebrew
    */
-  extractDescription(entity) {
-    return entity.descriptions?.he?.value || entity.descriptions?.en?.value || ''
+  extractDescription(entity, lang = 'en') {
+    if (lang === 'he') {
+      return entity.descriptions?.he?.value || entity.descriptions?.en?.value || ''
+    }
+    return entity.descriptions?.en?.value || entity.descriptions?.he?.value || ''
+  }
+
+  /**
+   * Extract event start year (P580, fallback P585)
+   */
+  extractEventStartYear(entity) {
+    const startClaim = entity.claims?.P580 || entity.claims?.P585
+    if (!startClaim || startClaim.length === 0) return null
+
+    const timeValue = startClaim[0].mainsnak?.datavalue?.value?.time
+    if (!timeValue) return null
+
+    const match = timeValue.match(/^[+-]?(\d+)-/)
+    return match ? parseInt(match[1]) : null
+  }
+
+  /**
+   * Extract event end year (P582)
+   */
+  extractEventEndYear(entity) {
+    const endClaim = entity.claims?.P582
+    if (!endClaim || endClaim.length === 0) return null
+
+    const timeValue = endClaim[0].mainsnak?.datavalue?.value?.time
+    if (!timeValue) return null
+
+    const match = timeValue.match(/^[+-]?(\d+)-/)
+    return match ? parseInt(match[1]) : null
+  }
+
+  /**
+   * Extract event location - resolves P276 (location) or P17 (country) to region
+   */
+  async extractEventLocation(entity) {
+    // Try P276 (location) first
+    const locationClaim = entity.claims?.P276
+    if (locationClaim && locationClaim.length > 0) {
+      const placeId = locationClaim[0].mainsnak?.datavalue?.value?.id
+      if (placeId) {
+        const direct = this.mapPlaceToRegion(placeId)
+        if (direct) return direct
+        const resolved = await this.resolveCountryFromPlace(placeId)
+        if (resolved) return resolved
+      }
+    }
+
+    // Fallback to P17 (country)
+    const countryClaim = entity.claims?.P17
+    if (countryClaim && countryClaim.length > 0) {
+      const countryId = countryClaim[0].mainsnak?.datavalue?.value?.id
+      if (countryId) {
+        const region = this.mapPlaceToRegion(countryId)
+        if (region) return region
+      }
+    }
+
+    return null
   }
 }
 

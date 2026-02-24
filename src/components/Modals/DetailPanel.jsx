@@ -36,7 +36,8 @@ const DetailPanel = () => {
 
         if (item.wikipedia_url) {
           try {
-            wikidataId = await wikidataService.getWikidataIdFromWikipediaUrl(item.wikipedia_url)
+            const result = await wikidataService.getWikidataIdFromWikipediaUrl(item.wikipedia_url)
+            wikidataId = result?.wikidataId || result
           } catch {
             // Wikipedia URL didn't resolve, fall back to provided wikidata_id
           }
